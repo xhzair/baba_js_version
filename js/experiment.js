@@ -3,17 +3,43 @@
  * 主实验控制文件
  */
 
-// 初始化jsPsych
+// ---------- jsPsych 初始化并集成 Prolific ----------
 const jsPsych = initJsPsych({
     display_element: 'jspsych-target',
     default_iti: 250,
     override_safe_mode: true, // 允许在file://协议下运行
-    on_finish: function() {
+    on_finish: function () {
         // 实验结束时的处理
         console.log('Experiment completed');
+
+        // （可选）在本地下载完整数据备份
+        // jsPsych.data.get().localSave('csv', 'raw_data.csv');
+
+        // 如果来自 Prolific，则自动重定向至完成链接
+        const pid = jsPsych.data.getURLVariable('PROLIFIC_PID');
+        if (pid) {
+            // 请将 XXXXXXX 替换为 Prolific 提供的 Completion Code
+            window.location.href = 'https://app.prolific.co/submissions/complete?cc=XXXXXXX';
+            return; // 结束
+        }
+
+        // 否则默认展示 JSON 数据（原有功能）
         jsPsych.data.displayData('json');
     }
 });
+
+// 捕获 Prolific URL 参数并写入全局 data
+(function captureProlificIds() {
+    const prolific_pid = jsPsych.data.getURLVariable('PROLIFIC_PID');
+    const study_id     = jsPsych.data.getURLVariable('STUDY_ID');
+    const session_id   = jsPsych.data.getURLVariable('SESSION_ID');
+
+    jsPsych.data.addProperties({
+        prolific_pid: prolific_pid || null,
+        study_id: study_id || null,
+        session_id: session_id || null
+    });
+})();
 
 // 实验状态管理
 class ExperimentController {
@@ -24,7 +50,10 @@ class ExperimentController {
         this.unlockedLevels = { tutorial: 1, journey: 0 };
         this.completedLevels = { tutorial: [], journey: [] };
         this.experimentData = [];
-        this.participantId = this.generateParticipantId();
+
+        // 如果通过 Prolific 进入，则使用 PROLIFIC_PID 作为 participantId；否则生成随机 ID
+        const prolificPid = jsPsych.data.getURLVariable('PROLIFIC_PID');
+        this.participantId = prolificPid || this.generateParticipantId();
         
         // 随机分配实验条件 (prior-congruent 或 prior-incongruent)
         this.conditionType = this.randomAssignCondition();
