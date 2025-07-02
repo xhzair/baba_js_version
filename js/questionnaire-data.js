@@ -925,13 +925,13 @@ window.embeddedQuestionnaire = [
         "id": "attention_check_1",
         "type": "likert",
         "source": "ATTENTION_CHECK",
-        "question": "为确保您认真参与，请选择'非常同意'选项。",
+        "question": "Please select the 'Strongly Agree' option.",
         "options": [
-            {"text": "非常不同意", "value": 1},
-            {"text": "不同意", "value": 2},
-            {"text": "一般", "value": 3},
-            {"text": "同意", "value": 4},
-            {"text": "非常同意", "value": 5}
+            {"text": "Strongly Disagree", "value": 1},
+            {"text": "Disagree", "value": 2},
+            {"text": "Neutral", "value": 3},
+            {"text": "Agree", "value": 4},
+            {"text": "Strongly Agree", "value": 5}
         ],
         "correct_answer": 5,
         "is_attention_check": true
@@ -940,13 +940,13 @@ window.embeddedQuestionnaire = [
         "id": "attention_check_2",
         "type": "likert",
         "source": "ATTENTION_CHECK",
-        "question": "这是一个注意力检测题。请选择'不同意'选项以表明您在认真阅读问题。",
+        "question": "Please select the 'Disagree' option.",
         "options": [
-            {"text": "非常不同意", "value": 1},
-            {"text": "不同意", "value": 2},
-            {"text": "一般", "value": 3},
-            {"text": "同意", "value": 4},
-            {"text": "非常同意", "value": 5}
+            {"text": "Strongly Disagree", "value": 1},
+            {"text": "Disagree", "value": 2},
+            {"text": "Neutral", "value": 3},
+            {"text": "Agree", "value": 4},
+            {"text": "Strongly Agree", "value": 5}
         ],
         "correct_answer": 2,
         "is_attention_check": true

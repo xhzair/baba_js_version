@@ -117,7 +117,7 @@ var jsPsychFeedbackInput = (function () {
             display_element.innerHTML = html;
         }
 
-        setupEventListeners(trial, display_element, startTime) {
+        setupEventListeners(trial, _displayElement, startTime) {
             const feedbackInput = document.getElementById('feedback-input');
             const submitButton = document.getElementById('feedback-submit-btn');
             
