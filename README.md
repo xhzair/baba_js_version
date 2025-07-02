@@ -20,11 +20,11 @@
    - 操纵变量: 边界对象 (POOL vs BALLOON)
 
 2. **journey_understandproperty** - 属性理解
-   - 核心互动: 理解PUSH和DESTRUCT/IMPACT属性的交互
-   - 操纵变量: 推动对象 (DICE vs TREE) + 破坏属性 (DESTRUCT vs IMPACT)
+   - 核心互动: 理解DESTRUCT/IMPACT属性的交互
+   - 操纵变量: 破坏属性 (DESTRUCT vs IMPACT)
 
 3. **journey_switchidentity** - 身份转换
-   - 核心互动: 理解SHUT和RED属性，需要变换物体身份
+   - 核心互动: 需要变换物体身份
    - 操纵变量: 关联对象 (CHAIN+ANCHOR vs CHAIN+FAN)
 
 4. **journey_combination** - 组合使用
