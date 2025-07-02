@@ -51,8 +51,8 @@ const EXPERIMENTAL_CONDITIONS = {
     /**
      * Journey: Bridge Building (journey_understandproperty)
      * 
-     * 核心互动: 理解PUSH和DESTRUCT/IMPACT属性的交互，构建通路
-     * 关键属性: PUSH（可推动）, DESTRUCT/IMPACT（接触消失）
+     * 核心互动: 理解DESTRUCT/IMPACT属性的交互，构建通路
+     * 关键属性: DESTRUCT/IMPACT（接触消失）
      */
     journey_understandproperty: {
         // 与先验经验高度相关的设置
