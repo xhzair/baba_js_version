@@ -1,31 +1,16 @@
-name: Sync to Pavlovia
+- uses: actions/checkout@v3
+  with:
+    fetch-depth: 0          # ① 完整克隆，才能更新远端引用
 
-# ❶ 任何 push（含合并 PR）都会触发；如只想 main 分支，改为 on: [push] + if 条件
-on:
-  push:
-
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    steps:
-      # ❷ 拉取当前提交
-      - uses: actions/checkout@v3
-
-      # ❸ 设置 Git 作者信息（可随意）
-      - name: Git config
-        run: |
-          git config user.name  "xhaidenXHZ"
-          git config user.email "xuhuizhang@pku.edu.cn"
-
-      # ❹ Push 到 Pavlovia
-      - name: Push to Pavlovia
-        env:
-          USERNAME: ${{ secrets.PAVLOVIA_USER }}
-          TOKEN:    ${{ secrets.PAVLOVIA_PAT }}
-        run: |
-          # 添加 Pavlovia 远程（用 HTTPS + token）
-          git remote add pav "https://${USERNAME}:${TOKEN}@gitlab.pavlovia.org/${USERNAME}/baba_js_version.git"
-
-          # 将当前分支（如 main）强制推送到 Pavlovia main
-          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          git push pav "${CURRENT_BRANCH}:main" --force-with-lease
+- name: Sync & push to Pavlovia
+  env:
+    USERNAME: ${{ secrets.PAVLOVIA_USER }}
+    TOKEN:    ${{ secrets.PAVLOVIA_PAT }}
+  run: |
+    git remote add pav "https://${USERNAME}:${TOKEN}@gitlab.pavlovia.org/${USERNAME}/baba_js_version.git"
+    
+    # ② 先获取远端最新 commit，刷新 refs
+    git fetch pav main
+    
+    # ③ 覆盖推送，但加 --force-with-lease（只在远端没新提交时覆盖）
+    git push pav HEAD:main --force-with-lease
