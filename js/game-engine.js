@@ -715,7 +715,7 @@ class BabaGameEngine {
         
         // 检查是否有位置包含多个对象
         for (const key in positionMap) {
-            if (positionMap[key].length > 1) {
+            if (positionMap[key].length > 2) {
                 return true;
             }
         }

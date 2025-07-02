@@ -62,6 +62,12 @@ class ExperimentController {
         // 获取所有关卡数据
         this.allLevels = getAllLevels();
         this.chapters = getChapters();
+
+        // 根据 unlockedLevels 设置章节锁定状态
+        this.chapters = this.chapters.map(ch => ({
+            ...ch,
+            locked: ch.key !== 'tutorial' && (this.unlockedLevels[ch.key] || 0) === 0
+        }));
     }
     
     // 随机分配实验条件
@@ -435,6 +441,10 @@ class ExperimentController {
             if (chapterKey === 'tutorial' && 
                 this.completedLevels[chapterKey].length >= this.allLevels[chapterKey].length) {
                 this.unlockedLevels['journey'] = 1;
+
+                // 解锁journey章节对应的locked标记
+                const journeyChapter = this.chapters.find(c => c.key === 'journey');
+                if (journeyChapter) journeyChapter.locked = false;
             }
         }
     }

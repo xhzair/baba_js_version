@@ -127,7 +127,7 @@ var jsPsychChapterSelect = (function () {
                     <h1 class="selection-title">Level Selection - ${trial.current_chapter}</h1>
                     <p class="selection-subtitle">Available levels: ${trial.unlocked_levels}/${trial.levels.length}</p>
                     
-                    <div class="selection-grid">
+                    <div class="selection-grid" style="grid-template-columns: repeat(2, 1fr);">
                         ${trial.levels.map((level, index) => 
                             this.createLevelItem(level, index, trial)
                         ).join('')}
@@ -175,7 +175,7 @@ var jsPsychChapterSelect = (function () {
                 <div class="${className}" data-level-index="${index}">
                     <h3>${index + 1}. ${level.name}</h3>
                     ${locked ? '<p style="color: #ccc; font-style: italic;">Locked</p>' : ''}
-                    ${completed ? '<p style="color: #4caf50; font-weight: bold;">�?Completed</p>' : ''}
+                    ${completed ? '<p style="color: #4caf50; font-weight: bold;">Completed</p>' : ''}
                 </div>
             `;
         }
@@ -257,8 +257,9 @@ var jsPsychChapterSelect = (function () {
         }
 
         isChapterLocked(chapter, index) {
-            // For demo purposes, only lock chapters after the first two
-            return index > 1;
+            if (typeof chapter.locked !== 'undefined') return chapter.locked;
+            // 默认：除教程外均锁定
+            return index > 0;
         }
     }
 
