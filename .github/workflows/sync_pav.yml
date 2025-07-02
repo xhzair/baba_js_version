@@ -1,0 +1,32 @@
+name: Sync to Pavlovia
+on: [push]          # 监听所有 push；如只想 main 分支可改 on: push: branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ 取出当前提交（完整克隆，避免 shallow push 报错）
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0      # ← 冒号 + 空格
+
+      # 2️⃣ 设置 Git 身份（可自定义）
+      - name: Git config
+        run: |
+          git config user.name  "xhaidenXHZ"
+          git config user.email "xuhuizhang@pku.edu.cn"
+
+      # 3️⃣ 同步到 Pavlovia
+      - name: Push to Pavlovia
+        env:
+          USERNAME: ${{ secrets.PAVLOVIA_USER }}
+          TOKEN:    ${{ secrets.PAVLOVIA_PAT }}
+        run: |
+          # 添加 Pavlovia 远程（使用 PAT）
+          git remote add pav "https://${USERNAME}:${TOKEN}@gitlab.pavlovia.org/${USERNAME}/baba_js_version.git"
+
+          # 先拉取远端 main，刷新引用
+          git fetch pav main
+
+          # 强推，但使用 --force-with-lease 保护：若远端出现新提交则拒绝
+          git push pav HEAD:main --force-with-lease
