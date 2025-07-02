@@ -28,4 +28,4 @@ jobs:
 
           # 将当前分支（如 main）强制推送到 Pavlovia main
           CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          git push pav "${CURRENT_BRANCH}:main"
+          git push pav HEAD:main --force-with-lease
