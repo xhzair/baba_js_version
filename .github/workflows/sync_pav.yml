@@ -13,8 +13,8 @@ jobs:
       # 2️⃣ 设置 Git 身份（可自定义）
       - name: Git config
         run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name  "xhaidenXHZ"
+          git config user.email "xuhuizhang@pku.edu.cn"
 
       # 3️⃣ 同步到 Pavlovia
       - name: Push to Pavlovia
