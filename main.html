@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baba is You - Psychology Experiment</title>
+    
+    <!-- jsPsych CSS and JS (Local) -->
+    <script src="jspsych/dist/jspsych.js"></script>
+    <link href="jspsych/dist/jspsych.css" rel="stylesheet" type="text/css" />
+    
+    <!-- jsPsych plugins (if needed for extensions) -->
+    <script src="jspsych/dist/plugin-html-keyboard-response.js"></script>
+    <script src="jspsych/dist/plugin-html-button-response.js"></script>
+    <script src="jspsych/dist/plugin-survey-likert.js"></script>
+    <script src="jspsych/dist/plugin-survey-multi-choice.js"></script>
+    <script src="jspsych/dist/plugin-survey-text.js"></script>
+    <script src="jspsych/dist/plugin-fullscreen.js"></script>
+    <script src="jspsych/dist/plugin-preload.js"></script>
+    <script src="jspsych/dist/plugin-call-function.js"></script>
+    
+    <!-- Our custom CSS -->
+    <link href="css/baba-game.css" rel="stylesheet" type="text/css" />
+    <link href="css/cognitive-tasks.css" rel="stylesheet" type="text/css" />
+    
+    <style>
+        .jspsych-survey-likert-statement, 
+        .jspsych-survey-multi-choice-question,
+        .jspsych-survey-text-question p,
+        .jspsych-survey-likert-preamble,
+        .jspsych-survey-multi-choice-preamble,
+        .jspsych-survey-text-preamble {
+            color: white !important;
+            font-size: 22px !important;
+            font-weight: normal !important;
+            text-align: center !important;
+            margin-bottom: 30px !important;
+        }
+        
+        .jspsych-survey-likert-opts {
+            font-size: 16px !important;
+            padding-bottom: 20px !important;
+        }
+        
+        .jspsych-survey-likert-opt-label {
+            color: white !important;
+            font-weight: normal !important;
+        }
+        
+        .jspsych-survey-multi-choice-option {
+            color: white !important;
+            font-size: 18px !important;
+            margin-bottom: 10px !important;
+            text-align: left !important;
+        }
+        
+        .jspsych-survey-multi-choice-text input[type="radio"] {
+            margin-right: 8px !important;
+        }
+        
+        input[type="text"], textarea {
+            padding: 10px !important;
+            font-size: 16px !important;
+            width: 80% !important;
+            max-width: 600px !important;
+            border-radius: 5px !important;
+            border: 1px solid #ddd !important;
+        }
+        
+        .jspsych-btn {
+            padding: 12px 24px !important;
+            font-size: 18px !important;
+            margin-top: 20px !important;
+        }
+        
+        /* Progress bar styling */
+        .progress-container {
+            width: 60%;
+            max-width: 600px;
+            margin: 0 auto 40px auto;
+            background-color: #333;
+            border-radius: 10px;
+            padding: 3px;
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background-color: #4CAF50;
+            border-radius: 7px;
+            transition: width 0.3s ease;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .progress-text {
+            color: white;
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .question-prompt {
+            font-size: 16px !important;
+            color: white !important;
+            margin-top: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .fullscreen-warning {
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="jspsych-target"></div>
+    
+    <!-- Game engine and utilities -->
+    <script src="js/game-engine.js"></script>
+    <script src="js/level-data.js"></script>
+    <script src="js/experimental-conditions.js"></script>
+    
+    <!-- jsPsych plugins -->
+    <script src="js/jspsych-baba-game.js"></script>
+    <script src="js/jspsych-baba-instructions.js"></script>
+    <script src="js/jspsych-chapter-select.js"></script>
+    <script src="js/jspsych-rating-scale.js"></script>
+    <script src="js/jspsych-feedback-input.js"></script>
+    <script src="js/jspsych-digit-span.js"></script>
+    <script src="js/jspsych-dsst.js"></script>
+    <script src="js/jspsych-aut.js"></script>
+    <script src="js/jspsych-verbal-fluency.js"></script>
+    <script src="js/questionnaire-data.js"></script>
+    
+    <!-- Main experiment script -->
+    <script src="js/experiment.js"></script>
+    
+    <!-- Custom questionnaire utilities -->
+    <script>
+        // 监控全屏状态
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        
+        function handleFullscreenChange() {
+            // 如果退出全屏且实验已经开始
+            if (!document.fullscreenElement && 
+                !document.webkitFullscreenElement && 
+                !document.mozFullScreenElement && 
+                !document.msFullscreenElement && 
+                window.experimentStarted) {
+                
+                // 显示警告并在短暂延迟后重新进入全屏
+                alert('您已退出全屏模式！请保持全屏以继续实验。系统将尝试恢复全屏。');
+                
+                setTimeout(() => {
+                    try {
+                        const docElm = document.documentElement;
+                        if (docElm.requestFullscreen) {
+                            docElm.requestFullscreen();
+                        } else if (docElm.webkitRequestFullscreen) {
+                            docElm.webkitRequestFullscreen();
+                        } else if (docElm.mozRequestFullScreen) {
+                            docElm.mozRequestFullScreen();
+                        } else if (docElm.msRequestFullscreen) {
+                            docElm.msRequestFullscreen();
+                        }
+                    } catch (e) {
+                        console.error('无法恢复全屏模式', e);
+                    }
+                }, 1000);
+            }
+        }
+        
+        // 在原有jsPsych初始化后添加全屏指导和控制
+        const originalJsPsych = initJsPsych;
+        initJsPsych = function(options) {
+            const jsPsych = originalJsPsych(options);
+            
+            // 保存原始的run方法
+            const originalRun = jsPsych.run;
+            
+            // 重写run方法，在开始前添加全屏指导
+            jsPsych.run = function(timeline) {
+                // 创建全屏指导试次
+                const fullscreenInstructions = {
+                    type: jsPsychHtmlButtonResponse,
+                    stimulus: `
+                        <h1 style="color: white;">实验将在全屏模式下进行</h1>
+                        <div style="color: white; max-width: 800px; margin: 0 auto; font-size: 18px; line-height: 1.6; text-align: left;">
+                            <p>为确保实验数据的有效性，本实验必须在<strong>全屏模式</strong>下进行。</p>
+                            <p>请注意：</p>
+                            <ul style="text-align: left; padding-left: 20px;">
+                                <li>点击"进入全屏"按钮后，实验将自动切换至全屏模式</li>
+                                <li>请勿在实验过程中退出全屏模式</li>
+                                <li>退出全屏将被视为<strong>退出实验</strong></li>
+                                <li>确保您的设备电量充足，并关闭可能的通知干扰</li>
+                            </ul>
+                            <p class="fullscreen-warning">重要提示：请在整个实验过程中保持全屏状态！</p>
+                        </div>
+                    `,
+                    choices: ['进入全屏'],
+                    on_finish: function() {
+                        // 标记实验已开始
+                        window.experimentStarted = true;
+                    }
+                };
+                
+                // 创建全屏切换试次
+                const enterFullscreen = {
+                    type: jsPsychFullscreen,
+                    fullscreen_mode: true,
+                    message: `<p style="color: white;">实验即将开始，请保持全屏状态直至实验结束。</p>`,
+                    button_label: "开始实验"
+                };
+                
+                // 将全屏指导和切换添加到时间线开始
+                const newTimeline = [fullscreenInstructions, enterFullscreen].concat(timeline);
+                
+                // 调用原始run方法
+                originalRun.call(jsPsych, newTimeline);
+            };
+            
+            return jsPsych;
+        };
+        
+        // Function to group questions by source
+        function groupQuestionsBySource(questions) {
+            const groups = {};
+            
+            // Group 1: CPI, CSE, CMS
+            groups.creativity = questions.filter(q => ['CPI', 'CSE', 'CMS'].includes(q.source));
+            
+            // Group 2: AARC
+            groups.aarc = questions.filter(q => q.source === 'AARC');
+            
+            // Group 3: DEM
+            groups.demographics = questions.filter(q => q.source === 'DEM');
+            
+            return groups;
+        }
+        
+        // Function to create question trials in one-by-one format
+        function createQuestionTrials(questions, groupName, participantId, startIdx = 0) {
+            const trials = [];
+            const totalQuestions = questions.length;
+            
+            // Introduction page for this group
+            let introTitle, introText;
+            if (groupName === 'creativity') {
+                introTitle = "Creativity Questionnaire";
+                introText = "The following questions are about your creative abilities and beliefs about creativity.";
+            } else if (groupName === 'aarc') {
+                introTitle = "Age-related Changes Questionnaire";
+                introText = "The following questions are about how you perceive age-related changes in your life.";
+            } else if (groupName === 'demographics') {
+                introTitle = "Demographics Questionnaire";
+                introText = "The following questions are about your background information.";
+            }
+            
+            trials.push({
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `<h2 style='color:white;'>${introTitle}</h2><p style='color:white;'>${introText}</p>`,
+                choices: ['Continue'],
+                data: { 
+                    trial_type: 'questionnaire_intro',
+                    participant_id: participantId,
+                    questionnaire_group: groupName
+                }
+            });
+            
+            // Create a trial for each question
+            questions.forEach((question, idx) => {
+                const questionIdx = idx + startIdx;
+                const progressPercent = Math.round(((idx + 1) / totalQuestions) * 100);
+                
+                const progressBar = `
+                    <div class="progress-text">Question ${idx + 1} of ${totalQuestions}</div>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width:${progressPercent}%;">${progressPercent}%</div>
+                    </div>
+                `;
+                
+                if (question.type === 'likert') {
+                    // Using HTML keyboard response with custom buttons
+                    const buttonChoices = question.options.map(opt => opt.text);
+                    
+                    // Determine button width based on number of choices
+                    const buttonWidth = buttonChoices.length <= 5 ? 120 : Math.max(80, Math.floor(600 / buttonChoices.length));
+                    
+                    // Create buttons HTML
+                    let buttonsHTML = '';
+                    buttonChoices.forEach((choice, idx) => {
+                        buttonsHTML += `<button 
+                            class="jspsych-custom-btn" 
+                            data-choice="${idx}" 
+                            style="width:${buttonWidth}px; height:50px; margin:10px 5px; padding:5px 10px; font-size:16px; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center;"
+                            >${choice}</button>`;
+                    });
+                    
+                    trials.push({
+                        type: jsPsychHtmlKeyboardResponse,
+                        stimulus: `
+                            <div style="width:100%; max-width:800px; margin:0 auto; overflow:hidden;">
+                                ${progressBar}
+                                <div style="color:white; font-size:22px; margin-bottom:30px; text-align:center;">
+                                    ${question.question}
+                                </div>
+                                <div style="display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:center; margin-bottom:20px;">
+                                    ${buttonsHTML}
+                                </div>
+                                <div style="margin-top:20px; text-align:center;">
+                                    <button id="confirm-btn" style="padding:12px 25px; font-size:18px; background-color:#888888; color:white; border:none; border-radius:5px; cursor:not-allowed; min-width:150px;">Confirm</button>
+                                </div>
+                                <div id="selection-text" style="color:white; margin-top:15px; font-size:16px; min-height:30px; text-align:center;"></div>
+                            </div>
+                        `,
+                        choices: "NO_KEYS",
+                        data: { 
+                            trial_type: 'questionnaire_likert',
+                            participant_id: participantId,
+                            questionId: question.id,
+                            questionSource: question.source,
+                            questionType: question.type
+                        },
+                        on_load: function() {
+                            let selectedChoice = null;
+                            const confirmBtn = document.getElementById('confirm-btn');
+                            const selectionText = document.getElementById('selection-text');
+                            
+                            confirmBtn.disabled = true;
+                            
+                            // Add click event listeners to buttons
+                            document.querySelectorAll('.jspsych-custom-btn').forEach(btn => {
+                                btn.addEventListener('click', function(e) {
+                                    const choiceIdx = parseInt(this.getAttribute('data-choice'));
+                                    
+                                    // Reset all buttons to default style
+                                    document.querySelectorAll('.jspsych-custom-btn').forEach(b => {
+                                        b.style.backgroundColor = '#f0f0f0';
+                                        b.style.color = '#000000';
+                                    });
+                                    
+                                    // Highlight selected button
+                                    this.style.backgroundColor = '#4CAF50';
+                                    this.style.color = 'white';
+                                    
+                                    // Show selection text
+                                    selectionText.textContent = `You selected: ${buttonChoices[choiceIdx]}`;
+                                    
+                                    // Enable confirm button
+                                    confirmBtn.disabled = false;
+                                    confirmBtn.style.backgroundColor = '#4CAF50';
+                                    confirmBtn.style.cursor = 'pointer';
+                                    
+                                    // Store selected choice
+                                    selectedChoice = choiceIdx;
+                                });
+                            });
+                            
+                            // Add click event listener to confirm button
+                            confirmBtn.addEventListener('click', function() {
+                                if (!this.disabled && selectedChoice !== null) {
+                                    // End trial and pass the selected value
+                                    jsPsych.finishTrial({
+                                        rt: performance.now(),
+                                        response: selectedChoice,
+                                        question_id: question.id,
+                                        question_source: question.source,
+                                        question_type: question.type,
+                                        question_response: {
+                                            [`Q${question.id}`]: selectedChoice + 1 // +1 to match original 1-5 scale
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                } else if (question.type === 'option') {
+                    // Using HTML keyboard response with custom buttons
+                    const buttonChoices = question.options.map(opt => opt.text);
+                    
+                    // Create buttons HTML - options can be longer text, so keep them stacked
+                    let buttonsHTML = '';
+                    buttonChoices.forEach((choice, idx) => {
+                        buttonsHTML += `<button 
+                            class="jspsych-custom-btn" 
+                            data-choice="${idx}" 
+                            style="width:80%; min-height:50px; margin:8px; padding:12px 15px; font-size:16px; background-color:#f0f0f0; border:1px solid #ccc; border-radius:4px; cursor:pointer; text-align:left;"
+                            >${choice}</button>`;
+                    });
+                    
+                    trials.push({
+                        type: jsPsychHtmlKeyboardResponse,
+                        stimulus: `
+                            <div style="width:100%; max-width:800px; margin:0 auto; overflow:hidden;">
+                                ${progressBar}
+                                <div style="color:white; font-size:22px; margin-bottom:30px; text-align:center;">
+                                    ${question.question}
+                                </div>
+                                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%;">
+                                    ${buttonsHTML}
+                                </div>
+                                <div style="margin-top:20px; text-align:center;">
+                                    <button id="confirm-btn" style="padding:12px 25px; font-size:18px; background-color:#888888; color:white; border:none; border-radius:5px; cursor:not-allowed; min-width:150px;">Confirm</button>
+                                </div>
+                                <div id="selection-text" style="color:white; margin-top:15px; font-size:16px; min-height:30px; text-align:center;"></div>
+                            </div>
+                        `,
+                        choices: "NO_KEYS",
+                        data: { 
+                            trial_type: 'questionnaire_option',
+                            participant_id: participantId,
+                            questionId: question.id,
+                            questionSource: question.source,
+                            questionType: question.type
+                        },
+                        on_load: function() {
+                            let selectedChoice = null;
+                            const confirmBtn = document.getElementById('confirm-btn');
+                            const selectionText = document.getElementById('selection-text');
+                            
+                            confirmBtn.disabled = true;
+                            
+                            // Add click event listeners to buttons
+                            document.querySelectorAll('.jspsych-custom-btn').forEach(btn => {
+                                btn.addEventListener('click', function(e) {
+                                    const choiceIdx = parseInt(this.getAttribute('data-choice'));
+                                    
+                                    // Reset all buttons to default style
+                                    document.querySelectorAll('.jspsych-custom-btn').forEach(b => {
+                                        b.style.backgroundColor = '#f0f0f0';
+                                        b.style.color = '#000000';
+                                    });
+                                    
+                                    // Highlight selected button
+                                    this.style.backgroundColor = '#4CAF50';
+                                    this.style.color = 'white';
+                                    
+                                    // Show selection text
+                                    selectionText.textContent = `You selected: ${buttonChoices[choiceIdx]}`;
+                                    
+                                    // Enable confirm button
+                                    confirmBtn.disabled = false;
+                                    confirmBtn.style.backgroundColor = '#4CAF50';
+                                    confirmBtn.style.cursor = 'pointer';
+                                    
+                                    // Store selected choice
+                                    selectedChoice = choiceIdx;
+                                });
+                            });
+                            
+                            // Add click event listener to confirm button
+                            confirmBtn.addEventListener('click', function() {
+                                if (!this.disabled && selectedChoice !== null) {
+                                    // End trial and pass the selected value
+                                    jsPsych.finishTrial({
+                                        rt: performance.now(),
+                                        response: selectedChoice,
+                                        question_id: question.id,
+                                        question_source: question.source,
+                                        question_type: question.type,
+                                        question_response: {
+                                            [`Q${question.id}`]: buttonChoices[selectedChoice]
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                } else if (question.type === 'text') {
+                    let promptHtml = '';
+                    if (question.prompt) {
+                        promptHtml = `<div class="question-prompt">${question.prompt}</div>`;
+                    }
+                    
+                    trials.push({
+                        type: jsPsychSurveyText,
+                        questions: [{
+                            prompt: question.question,
+                            name: `Q${question.id}`,
+                            placeholder: "Type your answer here",
+                            rows: 2,
+                            columns: 50,
+                            required: true
+                        }],
+                        preamble: `${progressBar}${promptHtml}`,
+                        button_label: 'Continue',
+                        data: { 
+                            trial_type: 'questionnaire_text',
+                            participant_id: participantId,
+                            questionId: question.id,
+                            questionSource: question.source,
+                            questionType: question.type
+                        }
+                    });
+                }
+            });
+            
+            return trials;
+        }
+    </script>
+</body>
+</html> 

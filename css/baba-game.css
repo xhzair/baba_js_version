@@ -1,0 +1,642 @@
+/* Baba is You Game Styles */
+
+/* Base styles */
+body, html {
+    margin: 0;
+    padding: 0;
+    background-color: #7d7d7d;
+    font-family: 'Verdana', Arial, sans-serif;
+    min-height: 100vh;
+}
+
+#jspsych-target {
+    background-color: #7d7d7d;
+    min-height: 100vh;
+    width: 100%;
+}
+
+/* 只在游戏页面禁用滚动 */
+.baba-game-active {
+    height: 100vh !important;
+    overflow: hidden !important;
+}
+
+.baba-game-active #jspsych-target {
+    height: 100vh !important;
+    overflow: hidden !important;
+}
+
+/* Game container */
+.baba-game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    max-height: 100vh;
+    background: linear-gradient(135deg, #7d7d7d 0%, #6a6a6a 100%);
+    font-family: 'Verdana', Arial, sans-serif;
+    padding: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Game grid */
+.game-grid {
+    display: grid;
+    gap: 0px; /* 完全移除间隔 */
+    background-color: #7d7d7d; /* 与背景色相同 */
+    border: none; /* 移除边框 */
+    border-radius: 0px;
+    padding: 0px;
+    margin: 10px;
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 160px); /* 为UI元素预留空间 */
+}
+
+/* Grid cell */
+.grid-cell {
+    width: var(--cell-size, 60px);
+    height: var(--cell-size, 60px);
+    background-color: transparent; /* 完全透明 */
+    position: relative;
+    border: none; /* 确保没有边框 */
+    margin: 0;
+    padding: 0;
+}
+
+/* Game object */
+.game-object {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+    text-align: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 8px;
+    transition: all 0.1s ease;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    z-index: 1; /* 默认层级 */
+}
+
+/* 最近移动的对象显示在上层 */
+.game-object.recently-moved {
+    z-index: 100 !important;
+    position: relative !important;
+}
+
+/* 文字对象在推动时也要显示在上层 */
+.text-object.recently-moved {
+    z-index: 101 !important;
+    position: relative !important;
+}
+
+/* YOU对象始终在最上层 */
+.game-object.property-you {
+    z-index: 20 !important;
+}
+
+/* YOU文字对象的层级 */
+.text-object.property-you {
+    z-index: 21 !important;
+}
+
+/* Image objects (non-text) */
+.game-object.image-object {
+    font-size: 0; /* Hide text for image objects */
+    color: transparent;
+}
+
+/* Text objects - 基础样式 */
+.text-object {
+    /* 移除边框并统一尺寸 */
+    border: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* 使用 flex 垂直水平居中 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    
+    /* 处理换行 */
+    white-space: normal;
+    overflow: visible;
+}
+
+/* 动态文本对象样式（非图片文本） */
+.text-object:not(.text-image) {
+    background-color: rgba(125, 125, 125, 0.8) !important; /* 与棋盘背景一致但稍微透明 */
+    background-image: none !important; /* 强制不显示背景图片 */
+    color: #fff; /* 默认文字颜色，将被脚本 inline color 覆盖 */
+    font-weight: bold;
+    line-height: 1; /* 行高设为1，避免双行文本撑高 */
+    padding: 0 0 2px 0; /* 底部额外留白避免裁剪 */
+    font-size: 24px; /* 统一字体大小 */
+}
+
+/* 移除了不需要的伪元素 */
+
+/* 单行文本样式（非图片文本） */
+.text-object.single-line:not(.text-image) {
+    font-size: 24px;
+    line-height: 1;
+}
+
+/* 多行文本样式（非图片文本） */
+.text-object.multi-line:not(.text-image) {
+    font-size: 24px; /* 与单行一致，后续自动缩放 */
+    line-height: 0.9; /* 更紧凑的行距让整体高度更高 */
+    padding-bottom: 0;
+}
+
+/* Object images - 只应用于实体对象，不影响文本对象 */
+.image-object.object-apple { background-image: url('../images/apple.png'); }
+.image-object.object-anchor { background-image: url('../images/anchor.png'); }
+.image-object.object-balloon { background-image: url('../images/balloon.png'); }
+.image-object.object-banana { background-image: url('../images/banana.png'); }
+.image-object.object-battery { background-image: url('../images/battery.png'); }
+.image-object.object-bomb { background-image: url('../images/bomb.png'); }
+.image-object.object-bone { background-image: url('../images/bone.png'); }
+.image-object.object-bottle { background-image: url('../images/bottle.png'); }
+.image-object.object-candle { background-image: url('../images/candle.png'); }
+.image-object.object-carrot { background-image: url('../images/carrot.png'); }
+.image-object.object-chain { background-image: url('../images/chain.png'); }
+.image-object.object-chair { background-image: url('../images/chair.png'); }
+.image-object.object-cherry { background-image: url('../images/cherry.png'); }
+.image-object.object-cloud { background-image: url('../images/cloud.png'); }
+.image-object.object-dice { background-image: url('../images/dice.png'); }
+.image-object.object-door { background-image: url('../images/door.png'); }
+.image-object.object-fan { background-image: url('../images/fan.png'); }
+.image-object.object-flag { background-image: url('../images/flag.png'); }
+.image-object.object-glasses { background-image: url('../images/glasses.png'); }
+.image-object.object-glove { background-image: url('../images/glove.png'); }
+.image-object.object-hat { background-image: url('../images/hat.png'); }
+.image-object.object-heart { background-image: url('../images/heart.png'); }
+.image-object.object-key { background-image: url('../images/key.png'); }
+.image-object.object-kiwi { background-image: url('../images/kiwi.png'); }
+.image-object.object-lemon { background-image: url('../images/lemon.png'); }
+.image-object.object-mirror { background-image: url('../images/mirror.png'); }
+.image-object.object-pear { background-image: url('../images/pear.png'); }
+.image-object.object-pepper { background-image: url('../images/pepper.png'); }
+.image-object.object-pineapple { background-image: url('../images/pineapple.png'); }
+.image-object.object-pipe { background-image: url('../images/pipe.png'); }
+.image-object.object-pool { background-image: url('../images/pool.png'); }
+.image-object.object-potato { background-image: url('../images/potato.png'); }
+.image-object.object-pumpkin { background-image: url('../images/pumpkin.png'); }
+.image-object.object-rose { background-image: url('../images/rose.png'); }
+.image-object.object-scales { background-image: url('../images/scales.png'); }
+.image-object.object-scissors { background-image: url('../images/scissors.png'); }
+.image-object.object-sun { background-image: url('../images/sun.png'); }
+.image-object.object-tap { background-image: url('../images/tap.png'); }
+.image-object.object-telephone { background-image: url('../images/telephone.png'); }
+.image-object.object-tomato { background-image: url('../images/tomato.png'); }
+.image-object.object-tree { background-image: url('../images/tree.png'); }
+.image-object.object-umbrella { background-image: url('../images/umbrella.png'); }
+
+/* 红色属性效果 - 使用预生成的红色图片 */
+.property-red.image-object.object-apple { background-image: url('../images_red/apple.png') !important; }
+.property-red.image-object.object-anchor { background-image: url('../images_red/anchor.png') !important; }
+.property-red.image-object.object-balloon { background-image: url('../images_red/balloon.png') !important; }
+.property-red.image-object.object-banana { background-image: url('../images_red/banana.png') !important; }
+.property-red.image-object.object-battery { background-image: url('../images_red/battery.png') !important; }
+.property-red.image-object.object-bomb { background-image: url('../images_red/bomb.png') !important; }
+.property-red.image-object.object-bone { background-image: url('../images_red/bone.png') !important; }
+.property-red.image-object.object-bottle { background-image: url('../images_red/bottle.png') !important; }
+.property-red.image-object.object-candle { background-image: url('../images_red/candle.png') !important; }
+.property-red.image-object.object-carrot { background-image: url('../images_red/carrot.png') !important; }
+.property-red.image-object.object-chain { background-image: url('../images_red/chain.png') !important; }
+.property-red.image-object.object-chair { background-image: url('../images_red/chair.png') !important; }
+.property-red.image-object.object-cherry { background-image: url('../images_red/cherry.png') !important; }
+.property-red.image-object.object-cloud { background-image: url('../images_red/cloud.png') !important; }
+.property-red.image-object.object-dice { background-image: url('../images_red/dice.png') !important; }
+.property-red.image-object.object-door { background-image: url('../images_red/door.png') !important; }
+.property-red.image-object.object-fan { background-image: url('../images_red/fan.png') !important; }
+.property-red.image-object.object-flag { background-image: url('../images_red/flag.png') !important; }
+.property-red.image-object.object-glasses { background-image: url('../images_red/glasses.png') !important; }
+.property-red.image-object.object-glove { background-image: url('../images_red/glove.png') !important; }
+.property-red.image-object.object-hat { background-image: url('../images_red/hat.png') !important; }
+.property-red.image-object.object-heart { background-image: url('../images_red/heart.png') !important; }
+.property-red.image-object.object-key { background-image: url('../images_red/key.png') !important; }
+.property-red.image-object.object-kiwi { background-image: url('../images_red/kiwi.png') !important; }
+.property-red.image-object.object-lemon { background-image: url('../images_red/lemon.png') !important; }
+.property-red.image-object.object-mirror { background-image: url('../images_red/mirror.png') !important; }
+.property-red.image-object.object-pear { background-image: url('../images_red/pear.png') !important; }
+.property-red.image-object.object-pepper { background-image: url('../images_red/pepper.png') !important; }
+.property-red.image-object.object-pineapple { background-image: url('../images_red/pineapple.png') !important; }
+.property-red.image-object.object-pipe { background-image: url('../images_red/pipe.png') !important; }
+.property-red.image-object.object-pool { background-image: url('../images_red/pool.png') !important; }
+.property-red.image-object.object-potato { background-image: url('../images_red/potato.png') !important; }
+.property-red.image-object.object-pumpkin { background-image: url('../images_red/pumpkin.png') !important; }
+.property-red.image-object.object-rose { background-image: url('../images_red/rose.png') !important; }
+.property-red.image-object.object-scales { background-image: url('../images_red/scales.png') !important; }
+.property-red.image-object.object-scissors { background-image: url('../images_red/scissors.png') !important; }
+.property-red.image-object.object-sun { background-image: url('../images_red/sun.png') !important; }
+.property-red.image-object.object-tap { background-image: url('../images_red/tap.png') !important; }
+.property-red.image-object.object-telephone { background-image: url('../images_red/telephone.png') !important; }
+.property-red.image-object.object-tomato { background-image: url('../images_red/tomato.png') !important; }
+.property-red.image-object.object-tree { background-image: url('../images_red/tree.png') !important; }
+.property-red.image-object.object-umbrella { background-image: url('../images_red/umbrella.png') !important; }
+
+/* 文字对象的红色属性 */
+.property-red.text-object:not(.text-image) {
+    background-color: rgb(255, 0, 0) !important;
+    color: #fff !important;
+    border: 2px solid #cc0000 !important;
+}
+
+.property-red.text-image {
+    /* 文字图片也可以使用红色版本，但这里先保持简单的红色背景 */
+    background-color: rgba(255, 0, 0, 0.8) !important;
+}
+
+/* Game UI */
+.game-ui {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 20px;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.game-info {
+    text-align: left;
+}
+
+.game-controls {
+    text-align: right;
+}
+
+.level-info {
+    text-align: center;
+    color: white;
+    margin-bottom: 10px;
+}
+
+/* Buttons */
+.baba-button {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 10px;
+    transition: background-color 0.3s;
+}
+
+.baba-button:hover {
+    background-color: #45a049;
+}
+
+.baba-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Chapter and level selection */
+.selection-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    padding: 40px;
+}
+
+.selection-title {
+    font-size: 48px;
+    margin-bottom: 30px;
+    color: white;
+}
+
+.selection-subtitle {
+    font-size: 24px;
+    margin-bottom: 40px;
+    color: #ddd;
+}
+
+.selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.selection-item {
+    background-color: #666;
+    border: 2px solid #888;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+}
+
+.selection-item:hover {
+    background-color: #777;
+    border-color: #aaa;
+}
+
+.selection-item.completed {
+    background-color: #4caf50;
+    border-color: #66bb6a;
+}
+
+.selection-item.locked {
+    background-color: #444;
+    border-color: #555;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Instructions */
+.instructions-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px;
+    color: white;
+    text-align: center;
+}
+
+.instructions-title {
+    font-size: 48px;
+    margin-bottom: 30px;
+    color: white;
+}
+
+.instructions-text {
+    font-size: 18px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.instructions-controls {
+    margin: 30px 0;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+}
+
+/* Rating scale */
+.rating-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    padding: 40px;
+}
+
+.rating-scale {
+    display: flex;
+    gap: 10px;
+    margin: 30px 0;
+}
+
+.rating-option {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.rating-option:hover {
+    border-color: #4caf50;
+    background-color: rgba(76, 175, 80, 0.2);
+}
+
+.rating-option.selected {
+    background-color: #4caf50;
+    border-color: #4caf50;
+    color: white;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .grid-cell {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .game-object {
+        font-size: 10px;
+    }
+    
+    .selection-title {
+        font-size: 36px;
+    }
+    
+    .instructions-title {
+        font-size: 36px;
+    }
+}
+
+/* Game completion effects */
+.level-complete {
+    animation: celebrate 0.5s ease-in-out;
+}
+
+@keyframes celebrate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Pause overlay */
+.pause-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.pause-message {
+    background-color: #333;
+    color: white;
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 24px;
+}
+
+/* 文本图片样式 - 确保文本图片正确显示 */
+.text-object.text-image {
+    background-color: transparent !important;
+    /* JavaScript会动态设置background-image */
+    background-size: 80% !important; /* 缩小到80%，与实体对象图片大小更协调 */
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    /* 确保没有文本内容显示 */
+    color: transparent !important;
+    font-size: 0 !important;
+}
+
+/* 数字广度测试样式 */
+.digit-span-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #7d7d7d;
+    padding: 20px;
+    box-sizing: border-box;
+    font-family: 'Verdana', Arial, sans-serif;
+}
+
+.digit-span-container h1 {
+    color: white;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.digit-span-container h2 {
+    color: white;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.digit-span-container .instructions-content {
+    color: white;
+    max-width: 800px;
+    margin: 0 auto;
+    font-size: 18px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.digit-span-container .instructions-content p {
+    margin: 15px 0;
+}
+
+.digit-span-container .instructions-content strong {
+    color: #FFE4B5;
+}
+
+#input-display {
+    background: #333;
+    border: 2px solid #666;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px auto;
+    width: 400px;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+}
+
+#input-display:empty::before {
+    content: "Press number keys to input";
+    color: #aaa;
+    font-size: 16px;
+}
+
+.digit-span-container button.baba-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 10px;
+    transition: background-color 0.3s;
+    font-family: 'Verdana', Arial, sans-serif;
+}
+
+.digit-span-container button.baba-button:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+.digit-span-container button.baba-button:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.digit-span-container .test-info {
+    color: white;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 18px;
+}
+
+.digit-span-container .test-progress {
+    color: #ccc;
+    font-size: 14px;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.digit-span-container .speaker-icon {
+    width: 100px;
+    height: 100px;
+    margin: 20px auto;
+    display: block;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .digit-span-container h1 {
+        font-size: 24px;
+    }
+    
+    .digit-span-container h2 {
+        font-size: 20px;
+    }
+    
+    .digit-span-container .instructions-content {
+        font-size: 16px;
+        padding: 0 15px;
+    }
+    
+    #input-display {
+        width: 300px;
+        font-size: 20px;
+        padding: 15px;
+    }
+    
+    .digit-span-container button.baba-button {
+        padding: 12px 24px;
+        font-size: 16px;
+    }
+}

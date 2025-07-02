@@ -1,0 +1,55 @@
+.digit-span-container,
+.dsst-container,
+.aut-container{
+    box-sizing:border-box;
+    width:100%;
+    max-width:none;
+    padding:40px 20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    background-color:#7d7d7d;
+    font-family:'Verdana', Arial, sans-serif;
+} 
+
+/* AUT textarea wider */
+.aut-container textarea{
+    width:80%;
+    max-width:1000px;
+    min-width:400px;
+    height:250px;
+    font-size:18px;
+    resize:vertical;
+} 
+
+/* Verbal Fluency container uses the same layout */
+.vf-container{
+    box-sizing:border-box;
+    width:100%;
+    max-width:none;
+    padding:40px 20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    background-color:#7d7d7d;
+    font-family:'Verdana', Arial, sans-serif;
+} 
+
+/* Questionnaire container */
+.q-container{
+    box-sizing:border-box;
+    width:100%;
+    max-width:none;
+    padding:40px 20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    background-color:#7d7d7d;
+    font-family:'Verdana', Arial, sans-serif;
+} 
