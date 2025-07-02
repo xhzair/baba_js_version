@@ -87,10 +87,10 @@ var jsPsychFeedbackInput = (function () {
         createFeedbackDisplay(display_element, trial) {
             const html = `
                 <div class="feedback-container" style="max-width: 800px; margin: 0 auto; text-align: center;">
-                    <h2 style="color: white; margin-bottom: 30px;">Player Feedback</h2>
+                    <h2 style="color: white; margin-bottom: 30px; font-size: 32px;">Player Feedback</h2>
                     
                     <div style="margin-bottom: 30px;">
-                        <p style="color: white; font-size: 18px; text-align: left;">
+                        <p style="color: white; font-size: 24px; text-align: left;">
                             ${trial.prompt}
                         </p>
                     </div>
@@ -109,8 +109,8 @@ var jsPsychFeedbackInput = (function () {
                     </button>
                     
                     ${trial.required ? 
-                        '<p style="color: #ccc; margin-top: 20px; font-size: 14px;">Please fill out the feedback before continuing.</p>' : 
-                        '<p style="color: #ccc; margin-top: 20px; font-size: 14px;">Feedback is optional, you can continue without providing feedback.</p>'}
+                        '<p style="color: #ccc; margin-top: 20px; font-size: 24px;">Please fill out the feedback before continuing.</p>' : 
+                        '<p style="color: #ccc; margin-top: 20px; font-size: 24px;">Feedback is optional, you can continue without providing feedback.</p>'}
                 </div>
             `;
             
@@ -168,15 +168,17 @@ var jsPsychFeedbackInput = (function () {
         }
     }
 
+    // Attach plugin metadata to make it discoverable by jsPsych
+    FeedbackInputPlugin.info = info;
+
     return FeedbackInputPlugin;
 })();
 
 // Export plugin (if in Node.js environment)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = jsPsychFeedbackInput;
-} else {
-    // Register plugin in browser environment
-    if (typeof jsPsychModule !== 'undefined') {
-        jsPsychModule.registerPlugin('feedback-input', jsPsychFeedbackInput);
-    }
-} 
+}
+
+// Attach plugin metadata so jsPsych can recognize the plugin correctly
+
+// (Removed the invalid top-level return statement to avoid syntax errors in browsers) 

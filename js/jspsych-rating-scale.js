@@ -100,7 +100,7 @@ var jsPsychRatingScale = (function () {
             // 创建评分界面
             this.createRatingDisplay(display_element, trial);
             
-            // 设置事件监听器
+            // 设置事件监听
             this.setupEventListeners(trial, startTime);
         }
 
@@ -141,16 +141,16 @@ var jsPsychRatingScale = (function () {
         createRatingDisplay(display_element, trial) {
             // 计算评分按钮的总宽度：按钮数量 * 按钮宽度 + 间距
             const numButtons = trial.scale_max - trial.scale_min + 1;
-            const buttonWidth = 50; // 与CSS中.rating-option的宽度一致
-            const gapWidth = 10; // 与CSS中.rating-scale的gap一致
+            const buttonWidth = 50; // 与CSS rating-option的宽度一致
+            const gapWidth = 10; // 与CSS rating-scale的gap一致
             const totalWidth = numButtons * buttonWidth + (numButtons - 1) * gapWidth;
             
             const html = `
                 <div class="rating-container">
-                    <h2 style="color: white; margin-bottom: 30px;">${this.getRatingTitle(trial.rating_type)}</h2>
+                    <h2 style="color: white; margin-bottom: 30px; font-size: 36px;">${this.getRatingTitle(trial.rating_type)}</h2>
                     
                     <div style="margin-bottom: 40px;">
-                        <h3 style="color: white; font-size: 24px; margin-bottom: 20px;">${trial.question}</h3>
+                        <h3 style="color: white; font-size: 28px; margin-bottom: 24px;">${trial.question}</h3>
                     </div>
                     
                     <div class="rating-scale" style="margin-bottom: 10px;">
@@ -158,13 +158,13 @@ var jsPsychRatingScale = (function () {
                     </div>
                     
                     <div style="display: flex; justify-content: space-between; margin-bottom: 30px; width: ${totalWidth}px; margin-left: auto; margin-right: auto;">
-                        <span style="color: white; font-size: 16px; text-align: center; width: ${buttonWidth}px;">${trial.scale_labels[trial.scale_min] || trial.scale_min}</span>
-                        <span style="color: white; font-size: 16px; text-align: center; width: ${buttonWidth}px;">${trial.scale_labels[trial.scale_max] || trial.scale_max}</span>
+                        <span style="color: white; font-size: 20px; text-align: center; width: ${buttonWidth}px;">${trial.scale_labels[trial.scale_min] || trial.scale_min}</span>
+                        <span style="color: white; font-size: 20px; text-align: center; width: ${buttonWidth}px;">${trial.scale_labels[trial.scale_max] || trial.scale_max}</span>
                     </div>
                     
                     <button id="continue-btn" class="baba-button" style="margin-top: 20px;" disabled>Continue</button>
                     
-                    ${trial.required ? '<p style="color: #ccc; margin-top: 20px; font-size: 14px;">Please select a rating to continue.</p>' : ''}
+                    ${trial.required ? '<p style="color: #ccc; margin-top: 20px; font-size: 20px;">Please select a rating to continue.</p>' : ''}
                 </div>
             `;
             

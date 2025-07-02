@@ -177,12 +177,12 @@ var jsPsychVerbalFluency = (function(){
 
         /* ---------- Utility ---------- */
         finish(){
-            // 检查是否有尚未记录时间戳的最后一个单词
+            // 检查是否有尚未记录时间戳的最后一个单�?
             const finalWords = this.testInput.split(',').map(w => w.trim()).filter(w => w);
             if (finalWords.length > 0 && (this.wordTimestamps.length === 0 || 
                 finalWords[finalWords.length - 1] !== this.wordTimestamps[this.wordTimestamps.length - 1]?.word)) {
                 
-                // 添加最后一个单词的时间戳
+                // 添加最后一个单词的时间�?
                 const lastWordTime = this.usedTime || this.timeLimit;
                 this.wordTimestamps.push({
                     word: finalWords[finalWords.length - 1],
@@ -208,7 +208,7 @@ var jsPsychVerbalFluency = (function(){
             const maxInterval = responseIntervals.length > 0 ? 
                 Math.max(...responseIntervals) : 0;
                 
-            // 标准差计算
+            // 标准差计�?
             let stdDeviation = 0;
             if (responseIntervals.length > 1) {
                 const squaredDiffs = responseIntervals.map(val => Math.pow(val - averageInterval, 2));

@@ -98,17 +98,17 @@ var jsPsychDigitSpan = (function () {
         }
     };
 
-    // 全局状态变量
+    // 全局状态变�?
     let audioCache = {};
     let isAudioLoaded = false;
     let audioLoadingInProgress = false;
 
-    // 试验状态变量
+    // 试验状态变�?
     let trialParams;
     let currentLength;
     let currentTrial;
     let totalTrialsCompleted;
-    let consecutiveErrors; // 连续错误次数（用于2下1上机制）
+    let consecutiveErrors; // 连续错误次数（用�?�?上机制）
     let results;
     let currentSequence;
     let userInput;
@@ -140,11 +140,11 @@ var jsPsychDigitSpan = (function () {
             try {
                 const audio = new Audio();
                 
-                // 创建Promise来处理音频加载
+                // 创建Promise来处理音频加�?
                 const loadPromise = new Promise((resolve, reject) => {
                     const timeout = setTimeout(() => {
                         reject(new Error('Audio loading timeout'));
-                    }, 5000); // 5秒超时
+                    }, 5000); // 5秒超�?
                     
                     audio.addEventListener('canplaythrough', () => {
                         clearTimeout(timeout);
@@ -157,7 +157,7 @@ var jsPsychDigitSpan = (function () {
                     }, { once: true });
                 });
                 
-                // 设置音频源
+                // 设置音频�?
                 audio.src = `audio/digit_${i}.wav`;
                 audio.preload = 'auto';
                 
@@ -167,7 +167,7 @@ var jsPsychDigitSpan = (function () {
                 // 存储音频元素
                 audioCache[i] = audio;
                 loadedCount++;
-                console.log(`✓ Loaded digit ${i} audio from WAV file`);
+                console.log(`�?Loaded digit ${i} audio from WAV file`);
                 
             } catch (error) {
                 console.warn(`Cannot load audio file for digit ${i}:`, error.message);
@@ -180,11 +180,11 @@ var jsPsychDigitSpan = (function () {
         audioLoadingInProgress = false;
         
         if (loadedCount === 10) {
-            console.log(`✅ Audio loading complete. All 10 WAV files loaded successfully.`);
+            console.log(`�?Audio loading complete. All 10 WAV files loaded successfully.`);
         } else if (loadedCount > 0) {
-            console.log(`⚠ Audio loading complete. ${loadedCount}/10 WAV files loaded, ${10 - loadedCount} missing.`);
+            console.log(`�?Audio loading complete. ${loadedCount}/10 WAV files loaded, ${10 - loadedCount} missing.`);
         } else {
-            console.log(`❌ No WAV files could be loaded. Please check audio file paths.`);
+            console.log(`�?No WAV files could be loaded. Please check audio file paths.`);
             throw new Error('No audio files could be loaded. Please ensure WAV files are in the audio/ directory.');
         }
     }
@@ -200,7 +200,7 @@ var jsPsychDigitSpan = (function () {
         currentLength = trialParams.starting_length;
         currentTrial = 0;
         totalTrialsCompleted = 0;
-        consecutiveErrors = 0; // 初始化连续错误次数
+        consecutiveErrors = 0; // 初始化连续错误次�?
         results = {
             lengths: [],
             responses: [],
@@ -378,7 +378,7 @@ var jsPsychDigitSpan = (function () {
 
         // 键盘事件
         keyHandler = (event) => {
-            // 防止事件冒泡和默认行为
+            // 防止事件冒泡和默认行�?
             event.preventDefault();
             event.stopPropagation();
             
@@ -468,7 +468,7 @@ var jsPsychDigitSpan = (function () {
                 return;
             }
             
-            // 重置音频到开始位置
+            // 重置音频到开始位�?
             audio.currentTime = 0;
             
             // 播放音频
@@ -524,7 +524,7 @@ var jsPsychDigitSpan = (function () {
             return;
         }
         
-        // 实现2下1上机制（只有在不结束的情况下才调整长度）
+        // 实现2�?上机制（只有在不结束的情况下才调整长度）
         if (correct) {
             // 正确：重置连续错误次数，长度+1
             consecutiveErrors = 0;
@@ -533,11 +533,11 @@ var jsPsychDigitSpan = (function () {
                 console.log(`Correct! Length increased to ${currentLength}`);
             }
         } else {
-            // 错误：连续错误次数+1
+            // 错误：连续错误次�?1
             consecutiveErrors++;
             console.log(`Incorrect! Consecutive errors: ${consecutiveErrors}`);
             
-            // 如果连续两次错误，长度-1
+            // 如果连续两次错误，长�?1
             if (consecutiveErrors >= 2) {
                 const minLength = trialParams.mode === 'forward' ? 3 : 2;
                 if (currentLength > minLength) {
@@ -554,13 +554,13 @@ var jsPsychDigitSpan = (function () {
     }
 
     function shouldEndTask(correct) {
-        // 在长度9且正确
+        // 在长�?且正�?
         if (currentLength === trialParams.max_length && correct) {
             console.log(`Test ended: Reached max length ${trialParams.max_length} with correct response`);
             return true;
         }
         
-        // 达到最大试验次数
+        // 达到最大试验次�?
         if (totalTrialsCompleted >= trialParams.max_total_trials) {
             console.log(`Test ended: Reached max trials (${trialParams.max_total_trials})`);
             return true;
@@ -570,7 +570,7 @@ var jsPsychDigitSpan = (function () {
     }
 
     function finishTest() {
-        // 清理事件监听器
+        // 清理事件监听�?
         if (keyHandler) {
             document.removeEventListener('keydown', keyHandler);
         }
@@ -579,7 +579,7 @@ var jsPsychDigitSpan = (function () {
         const maxLength = calculateMaxLength();
         const meanSpan = calculateMeanSpan();
         
-        // 准备最终数据
+        // 准备最终数�?
         const trialData = {
             mode: trialParams.mode,
             sequence: currentSequence,
@@ -615,7 +615,7 @@ var jsPsychDigitSpan = (function () {
     function calculateMeanSpan() {
         if (results.lengths.length === 0) return 0;
         
-        // 按长度分组并计算正确率
+        // 按长度分组并计算正确�?
         const lengthStats = {};
         for (let i = 0; i < results.lengths.length; i++) {
             const length = results.lengths[i];
@@ -641,7 +641,7 @@ var jsPsychDigitSpan = (function () {
             }
         }
         
-        // 如果所有长度都低于50%，使用最后一个长度
+        // 如果所有长度都低于50%，使用最后一个长�?
         if (targetLength === baselineLength && sortedLengths.length > 0) {
             targetLength = sortedLengths[sortedLengths.length - 1];
         }
@@ -649,10 +649,10 @@ var jsPsychDigitSpan = (function () {
         return targetLength;
     }
 
-    // 全局Promise resolver，用于控制试验完成
+    // 全局Promise resolver，用于控制试验完�?
     let trialResolver = null;
 
-    // 主要的试验函数
+    // 主要的试验函�?
     async function trialFunction(display_element, trial) {
         console.log('Starting digit span trial with parameters:', trial);
         
@@ -661,7 +661,7 @@ var jsPsychDigitSpan = (function () {
             trialResolver = resolve;
             
             try {
-                // 初始化测试状态
+                // 初始化测试状�?
                 initializeTest(trial);
                 
                 // 加载音频
@@ -675,7 +675,7 @@ var jsPsychDigitSpan = (function () {
         });
     }
 
-    // jsPsych v7 插件类
+    // jsPsych v7 插件�?
     class DigitSpanPlugin {
         constructor(jsPsych) {
             this.jsPsych = jsPsych;

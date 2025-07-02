@@ -1,7 +1,24 @@
 var jsPsychAUT = (function(){
     'use strict';
 
-    const info={name:'aut',version:'1.0.0',parameters:{objects:{type:'object',default:['Brick','Bedsheet']},time_limit:{type:'int',default:120},participant_id:{type:'string',default:''}}};
+    const info={
+        name:'aut',
+        version:'1.0.0',
+        parameters:{
+            objects:{
+                type:'object',
+                default:['Brick','Bedsheet']
+            },
+            time_limit:{
+                type:'int',
+                default:120
+            },
+            participant_id:{
+                type:'string',
+                default:''
+            }
+        }
+    };
 
     class AUTPlugin{constructor(jsPsych){this.jsPsych=jsPsych;}
         async trial(display_element,trial){
@@ -21,7 +38,7 @@ var jsPsychAUT = (function(){
             const obj=this.objects[this.idx];
             el.innerHTML=`<div class='aut-container' style='width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;'><h2 style='color:white;'>Object: ${obj}</h2><div id='aut-timer' style='color:#ffcc00;font-size:20px;margin-top:10px;'></div><textarea id='aut-input' placeholder='Please type your ideas here. Separate them by commas.' autofocus style='width:80vw;max-width:1000px;min-width:400px;height:250px;margin-top:40px;font-size:18px;'></textarea><br><button id='aut-submit' class='baba-button' style='margin-top:20px;'>Submit</button></div>`;
             const textarea=document.getElementById('aut-input');
-            // 立即启动计时器
+            // 立即启动计时
             this.startTime=performance.now();
             this.timer=setInterval(()=>this.updateTimer(),100);
             

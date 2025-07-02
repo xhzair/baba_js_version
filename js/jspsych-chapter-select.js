@@ -175,7 +175,7 @@ var jsPsychChapterSelect = (function () {
                 <div class="${className}" data-level-index="${index}">
                     <h3>${index + 1}. ${level.name}</h3>
                     ${locked ? '<p style="color: #ccc; font-style: italic;">Locked</p>' : ''}
-                    ${completed ? '<p style="color: #4caf50; font-weight: bold;">✓ Completed</p>' : ''}
+                    ${completed ? '<p style="color: #4caf50; font-weight: bold;">�?Completed</p>' : ''}
                 </div>
             `;
         }

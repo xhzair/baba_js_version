@@ -96,9 +96,7 @@ var jsPsychBabaGame = (function () {
             this.pauseCount = 0;
             this.currentTrial = null;
             this.keyHandler = null;
-            
-            // 现在使用预生成的彩色文本图片，不再需要颜色配置
-        }
+            }
         
 
 
@@ -217,9 +215,8 @@ var jsPsychBabaGame = (function () {
             const optimalSize = Math.min(maxCellSizeByWidth, maxCellSizeByHeight);
             
             // 设置最小和最大限制
-            const minCellSize = 30; // 最小30px，确保可读性
+            const minCellSize = 30; // 最小30px，确保可读
             const maxCellSize = 80; // 最大80px，避免过大
-            
             return Math.max(minCellSize, Math.min(maxCellSize, optimalSize));
         }
 
@@ -278,7 +275,7 @@ var jsPsychBabaGame = (function () {
                 const objectElement = document.createElement('div');
                 objectElement.className = 'game-object';
                 
-                // 添加对象类型类
+                // 添加对象类型
                 const objectType = obj.type.toLowerCase().replace('text_', '');
                 objectElement.classList.add(`object-${objectType}`);
                 
@@ -308,7 +305,7 @@ var jsPsychBabaGame = (function () {
                     const img = new Image();
                     img.onload = () => {
                         // 图片加载成功，保持图片显示
-                        console.log(`✓ 文本图片加载成功: ${imagePath}, 图片尺寸: ${img.width}x${img.height}`);
+                        console.log(`文本图片加载成功: ${imagePath}, 图片尺寸: ${img.width}x${img.height}`);
                         
                         // 调试：检查计算后的样式
                         setTimeout(() => {
@@ -320,7 +317,7 @@ var jsPsychBabaGame = (function () {
                     };
                     img.onerror = () => {
                         // 图片加载失败，回退到文字显示
-                        console.warn(`✗ 文本图片加载失败: ${imagePath}`);
+                        console.warn(`文本图片加载失败: ${imagePath}`);
                         objectElement.style.backgroundImage = 'none';
                         objectElement.textContent = textContent;
                         objectElement.style.color = 'white';
@@ -352,7 +349,6 @@ var jsPsychBabaGame = (function () {
         }
         
         // 已移除 applyTextColor 函数，因为现在使用预生成的彩色文本图片
-
         updateUI() {
             // 更新时间
             const timeRemaining = this.gameEngine.getRemainingTime();
@@ -366,7 +362,7 @@ var jsPsychBabaGame = (function () {
             // 移动计数暂时不显示，因为HTML模板中没有对应元素
             // 如果需要显示移动计数，可以在HTML模板中添加相应的元素
             
-            // 检查时间是否用完
+            // 检查时间是否用尽
             if (timeRemaining <= 0 && !this.gameCompleted) {
                 this.endGame(false, 'timeout');
             }
@@ -573,7 +569,7 @@ var jsPsychBabaGame = (function () {
             // 游戏结束时恢复页面滚动
             document.body.classList.remove('baba-game-active');
             
-            // 清理事件监听器
+            // 清理事件监听
             document.removeEventListener('keydown', this.keyHandler);
             
             // 收集数据
@@ -597,10 +593,10 @@ var jsPsychBabaGame = (function () {
             setTimeout(() => {
                 this.showCompletionMessage(won, reason);
                 
-                // 延长胜利提示显示时间到1.5s
+                // 延长胜利提示显示时间0.5s
                 setTimeout(() => {
                     this.jsPsych.finishTrial(trial_data);
-                }, 1500); // 延长到1500ms（1.5秒）
+                }, 1500); // 延长0.5秒
             }, 200);
         }
 
@@ -654,7 +650,7 @@ var jsPsychBabaGame = (function () {
                 switch (reason) {
                     case 'timeout':
                         message = 'Time\'s Up!';
-                        emoji = '⏰';
+                        emoji = '🕒';
                         break;
                     case 'defeated':
                         message = 'Game Over!';
@@ -662,7 +658,7 @@ var jsPsychBabaGame = (function () {
                         break;
                     default:
                         message = 'Level Failed!';
-                        emoji = '❌';
+                        emoji = '💥';
                 }
                 messageBox.innerHTML = `
                     <div style="color: #f44336; font-size: 48px; margin-bottom: 20px;">${emoji}</div>
@@ -699,11 +695,6 @@ var jsPsychBabaGame = (function () {
             }, 1600); // 在跳转后再清理，避免闪屏
         }
 
-        // 已移除 extractImageMainColor 和 enhanceColorForVisibility 函数
-        // 因为现在使用预生成的彩色文本图片，不再需要动态颜色处理
-        
-        // 已移除 formatTextWithLineBreaks 和 autoScaleMultiLineText 函数
-        // 因为现在使用预生成的文本图片，不再需要动态文本处理
     }
 
     BabaGamePlugin.info = info;

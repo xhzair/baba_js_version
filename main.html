@@ -97,8 +97,8 @@
         .progress-text {
             color: white;
             text-align: center;
-            font-size: 16px;
-            margin-bottom: 10px;
+            font-size: 22px;
+            margin-bottom: 12px;
         }
         
         .question-prompt {
@@ -111,8 +111,8 @@
         .fullscreen-warning {
             color: #ff6b6b;
             font-weight: bold;
-            margin-top: 20px;
-            font-size: 16px;
+            margin-top: 24px;
+            font-size: 22px;
         }
     </style>
 </head>
@@ -136,9 +136,6 @@
     <script src="js/jspsych-verbal-fluency.js"></script>
     <script src="js/questionnaire-data.js"></script>
     
-    <!-- Main experiment script -->
-    <script src="js/experiment.js"></script>
-    
     <!-- Custom questionnaire utilities -->
     <script>
         // 监控全屏状态
@@ -147,82 +144,112 @@
         document.addEventListener('mozfullscreenchange', handleFullscreenChange);
         document.addEventListener('MSFullscreenChange', handleFullscreenChange);
         
+        // 统一判定是否处于全屏
+        function isInFullScreen() {
+            return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        }
+
         function handleFullscreenChange() {
-            // 如果退出全屏且实验已经开始
-            if (!document.fullscreenElement && 
-                !document.webkitFullscreenElement && 
-                !document.mozFullScreenElement && 
-                !document.msFullscreenElement && 
-                window.experimentStarted) {
-                
-                // 显示警告并在短暂延迟后重新进入全屏
-                alert('您已退出全屏模式！请保持全屏以继续实验。系统将尝试恢复全屏。');
-                
-                setTimeout(() => {
-                    try {
-                        const docElm = document.documentElement;
-                        if (docElm.requestFullscreen) {
-                            docElm.requestFullscreen();
-                        } else if (docElm.webkitRequestFullscreen) {
-                            docElm.webkitRequestFullscreen();
-                        } else if (docElm.mozRequestFullScreen) {
-                            docElm.mozRequestFullScreen();
-                        } else if (docElm.msRequestFullscreen) {
-                            docElm.msRequestFullscreen();
+            if (!isInFullScreen() && window.experimentStarted && !window.fullscreenViolation) {
+                window.fullscreenViolation = true; // 防止多次触发
+
+                // 终止 jsPsych（若已初始化）
+                if (typeof jsPsych !== 'undefined' && jsPsych?.abortExperiment) {
+                    jsPsych.abortExperiment('Participant exited fullscreen');
+                }
+
+                // 创建覆盖层提示
+                const overlay = document.createElement('div');
+                overlay.id = 'fullscreen-exit-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: black;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10000;
+                    color: white;
+                    font-size: 28px;
+                    text-align: center;
+                `;
+
+                overlay.innerHTML = `
+                    <p>You have exited fullscreen mode.</p>
+                    <p>The experiment will close automatically in <span id="fs-countdown">3</span> seconds.</p>
+                `;
+                document.body.appendChild(overlay);
+
+                // 3 秒倒计时后尝试关闭窗口；若关闭失败则刷新页面
+                let remaining = 3;
+                const timer = setInterval(() => {
+                    remaining--;
+                    const span = document.getElementById('fs-countdown');
+                    if (span) span.textContent = remaining.toString();
+                    if (remaining <= 0) {
+                        clearInterval(timer);
+                        try {
+                            window.close();
+                            // 如果浏览器阻止关闭，则刷新到空白页
+                            setTimeout(() => location.href = 'about:blank', 100);
+                        } catch (e) {
+                            location.href = 'about:blank';
                         }
-                    } catch (e) {
-                        console.error('无法恢复全屏模式', e);
                     }
                 }, 1000);
             }
         }
         
-        // 在原有jsPsych初始化后添加全屏指导和控制
+        // Add fullscreen guidance and control after original jsPsych initialization
         const originalJsPsych = initJsPsych;
         initJsPsych = function(options) {
             const jsPsych = originalJsPsych(options);
             
-            // 保存原始的run方法
+            // Save original run method
             const originalRun = jsPsych.run;
             
-            // 重写run方法，在开始前添加全屏指导
+            // Override run method to add fullscreen guidance before starting
             jsPsych.run = function(timeline) {
-                // 创建全屏指导试次
+                // Create fullscreen instruction trial
                 const fullscreenInstructions = {
                     type: jsPsychHtmlButtonResponse,
                     stimulus: `
-                        <h1 style="color: white;">实验将在全屏模式下进行</h1>
+                        <h1 style="color: white;">Experiment will be conducted in fullscreen mode</h1>
                         <div style="color: white; max-width: 800px; margin: 0 auto; font-size: 18px; line-height: 1.6; text-align: left;">
-                            <p>为确保实验数据的有效性，本实验必须在<strong>全屏模式</strong>下进行。</p>
-                            <p>请注意：</p>
+                            <p>To ensure the validity of experimental data, this experiment must be conducted in <strong>fullscreen mode</strong>.</p>
+                            <p>Please note:</p>
                             <ul style="text-align: left; padding-left: 20px;">
-                                <li>点击"进入全屏"按钮后，实验将自动切换至全屏模式</li>
-                                <li>请勿在实验过程中退出全屏模式</li>
-                                <li>退出全屏将被视为<strong>退出实验</strong></li>
-                                <li>确保您的设备电量充足，并关闭可能的通知干扰</li>
+                                <li>After clicking the "Enter Fullscreen" button, the experiment will automatically switch to fullscreen mode</li>
+                                <li>Please do not exit fullscreen mode during the experiment</li>
+                                <li>Exiting fullscreen will be considered as <strong>exiting the experiment</strong></li>
+                                <li>Ensure your device has sufficient battery and close any possible notification distractions</li>
                             </ul>
-                            <p class="fullscreen-warning">重要提示：请在整个实验过程中保持全屏状态！</p>
+                            <p class="fullscreen-warning">Important: Please maintain fullscreen status throughout the entire experiment!</p>
                         </div>
                     `,
-                    choices: ['进入全屏'],
+                    choices: ['Enter Fullscreen'],
                     on_finish: function() {
-                        // 标记实验已开始
+                        // Mark experiment as started
                         window.experimentStarted = true;
                     }
                 };
                 
-                // 创建全屏切换试次
+                // Create fullscreen switch trial
                 const enterFullscreen = {
                     type: jsPsychFullscreen,
                     fullscreen_mode: true,
-                    message: `<p style="color: white;">实验即将开始，请保持全屏状态直至实验结束。</p>`,
-                    button_label: "开始实验"
+                    message: `<p style="color: white;">The experiment is about to begin. Please maintain fullscreen status until the experiment ends.</p>`,
+                    button_label: "Start Experiment"
                 };
                 
-                // 将全屏指导和切换添加到时间线开始
+                // Add fullscreen guidance and switch to the beginning of timeline
                 const newTimeline = [fullscreenInstructions, enterFullscreen].concat(timeline);
                 
-                // 调用原始run方法
+                // Call original run method
                 originalRun.call(jsPsych, newTimeline);
             };
             
@@ -505,5 +532,8 @@
             return trials;
         }
     </script>
+
+    <!-- Main experiment script (loaded after fullscreen override) -->
+    <script src="js/experiment.js"></script>
 </body>
 </html> 

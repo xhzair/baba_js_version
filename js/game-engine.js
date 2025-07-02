@@ -72,15 +72,21 @@ class BabaGameEngine {
         this.objects = [];
         this.rules = [];
         this.initialRules = levelData.initial_rules || [];
+        this.initialElements = levelData.elements || [];
         this.timeLimit = timeLimit;
         this.startTime = Date.now();
         this.operationCount = 0;
         this.errorAttempts = 0;
-        this.history = [];
         this.dead = false;
         this.paused = false;
         this.pauseTime = 0;
         this.totalPauseTime = 0;
+        
+        // 初始化缺失的变量
+        this.savedStates = [];
+        this.grid = [];
+        this.playerPosition = null;
+        this.levelId = levelData.level_id || 'unknown';
         
         // 最近移动的对象追踪
         this.recentlyMovedObjects = new Set();
@@ -645,7 +651,7 @@ class BabaGameEngine {
     saveState() {
         // 保存当前游戏状态
         this.savedStates.push({
-            grid: JSON.parse(JSON.stringify(this.grid)),
+            objects: JSON.parse(JSON.stringify(this.objects)),
             rules: JSON.parse(JSON.stringify(this.rules)),
             playerPosition: this.playerPosition ? {...this.playerPosition} : null
         });
@@ -658,7 +664,7 @@ class BabaGameEngine {
             is_dead: this.dead,
             has_control: this.hasPlayerControl(),
             has_overlap: this.checkForObjectOverlaps(),
-            grid_size: [this.grid.length, this.grid[0].length],
+            grid_size: this.gridSize,
             level_id: this.levelId
         };
         
@@ -668,27 +674,20 @@ class BabaGameEngine {
     extractObjectsState() {
         // 提取所有游戏对象的状态
         const objects = [];
-        for (let y = 0; y < this.grid.length; y++) {
-            for (let x = 0; x < this.grid[y].length; x++) {
-                const cell = this.grid[y][x];
-                if (cell && cell.length > 0) {
-                    cell.forEach(obj => {
-                        objects.push({
-                            type: obj.type,
-                            position: [x, y],
-                            is_text: obj.isText,
-                            properties: this.getObjectProperties(obj)
-                        });
-                    });
-                }
-            }
+        for (const obj of this.objects) {
+            objects.push({
+                type: obj.type,
+                position: obj.position,
+                is_text: obj.isText,
+                properties: this.getObjectProperties(obj)
+            });
         }
         return objects;
     }
     
     extractRulesState() {
         // 提取当前所有规则
-        return this.rules.map(rule => [rule.subject, rule.verb, rule.object]);
+        return this.rules.map(rule => [rule.subject, rule.verb, rule.predicate]);
     }
     
     getObjectProperties(obj) {
@@ -705,11 +704,19 @@ class BabaGameEngine {
     
     checkForObjectOverlaps() {
         // 检查是否有对象重叠
-        for (let y = 0; y < this.grid.length; y++) {
-            for (let x = 0; x < this.grid[y].length; x++) {
-                if (this.grid[y][x] && this.grid[y][x].length > 1) {
-                    return true;
-                }
+        const positionMap = {};
+        for (const obj of this.objects) {
+            const key = `${obj.position[0]},${obj.position[1]}`;
+            if (!positionMap[key]) {
+                positionMap[key] = [];
+            }
+            positionMap[key].push(obj);
+        }
+        
+        // 检查是否有位置包含多个对象
+        for (const key in positionMap) {
+            if (positionMap[key].length > 1) {
+                return true;
             }
         }
         return false;
@@ -771,19 +778,18 @@ class BabaGameEngine {
         const targetY = playerY + direction.y;
         
         // 检查目标位置是否有对象
-        if (this.isValidPosition(targetX, targetY) && 
-            this.grid[targetY][targetX] && 
-            this.grid[targetY][targetX].length > 0) {
-            
-            this.grid[targetY][targetX].forEach(obj => {
-                movedObjects.push({
-                    type: obj.type,
-                    position: [targetX, targetY],
-                    is_text: obj.isText,
-                    properties: this.getObjectProperties(obj)
-                });
+        const objectsAtTarget = this.objects.filter(obj => 
+            obj.position[0] === targetX && obj.position[1] === targetY
+        );
+        
+        objectsAtTarget.forEach(obj => {
+            movedObjects.push({
+                type: obj.type,
+                position: [targetX, targetY],
+                is_text: obj.isText,
+                properties: this.getObjectProperties(obj)
             });
-        }
+        });
         
         return movedObjects;
     }
@@ -913,11 +919,11 @@ class BabaGameEngine {
     }
     
     undo() {
-        if (this.history.length > 0) {
-            const lastState = this.history.pop();
+        if (this.savedStates.length > 0) {
+            const lastState = this.savedStates.pop();
             this.objects = lastState.objects;
             this.rules = lastState.rules;
-            this.operationCount = lastState.operationCount;
+            this.operationCount--;
             this.dead = false;
             // 清除最近移动对象的追踪
             this.recentlyMovedObjects.clear();
@@ -954,12 +960,13 @@ class BabaGameEngine {
         this.totalPauseTime = 0;
         this.operationCount = 0;
         this.errorAttempts = 0;
-        this.history = [];
+        this.savedStates = [];
         
         // 清除最近移动对象的追踪
         this.recentlyMovedObjects.clear();
         
         // Reload level
+        this.initializeObjects(this.initialElements || []);
         this.initializeRules();
         this.updateObjectProperties();
         this.parseRulesFromBoard();

@@ -101,7 +101,7 @@ var jsPsychDSST = (function () {
             switch (this.phase) {
                 case 'inst1':
                     this.renderInstructions(display_element, 'Digitâ€“Symbol Substitution Task',
-                        `<p>You will first complete <strong>${this.practiceCount}</strong> practice trials.</p><p>For each symbol shown, press the corresponding digit key <strong>(1â€“9)</strong> as fast and accurately as possible.</p>`,
+                        `<p>You will first complete <strong>${this.practiceCount}</strong> practice trials.</p><p>For each symbol shown, press the corresponding digit key <strong>(1â€?)</strong> as fast and accurately as possible.</p>`,
                         () => {
                             this.phase = 'practice';
                             this.currentIdx = 0;
@@ -166,7 +166,7 @@ var jsPsychDSST = (function () {
                     ${this.showPairTable()}
                     <div style="margin-top:40px; text-align:center;">
                         <img src="dsst symbol/${symbol}" style="width:100px; height:100px; border:4px solid #fff; background:#fff; padding:10px; box-sizing:border-box;">
-                        <p style="color:white; font-size:18px; margin-top:20px;">Press the corresponding digit (1â€“9)</p>
+                        <p style="color:white; font-size:18px; margin-top:20px;">Press the corresponding digit (1â€?)</p>
                     </div>
                     <p style="color:white; margin-top:30px;">Practice ${this.currentIdx + 1} / ${this.practiceCount}</p>
                 </div>`;

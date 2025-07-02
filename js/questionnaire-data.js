@@ -925,7 +925,7 @@ window.embeddedQuestionnaire = [
         "id": "attention_check_1",
         "type": "likert",
         "source": "ATTENTION_CHECK",
-        "question": "为确保您认真参与，请选择"非常同意"选项。",
+        "question": "为确保您认真参与，请选择'非常同意'选项。",
         "options": [
             {"text": "非常不同意", "value": 1},
             {"text": "不同意", "value": 2},
@@ -940,7 +940,7 @@ window.embeddedQuestionnaire = [
         "id": "attention_check_2",
         "type": "likert",
         "source": "ATTENTION_CHECK",
-        "question": "这是一个注意力检测题。请选择"不同意"选项以表明您在认真阅读问题。",
+        "question": "这是一个注意力检测题。请选择'不同意'选项以表明您在认真阅读问题。",
         "options": [
             {"text": "非常不同意", "value": 1},
             {"text": "不同意", "value": 2},
