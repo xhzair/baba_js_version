@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Digit Span & DSST Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- jsPsych core -->
+    <script src="jspsych/dist/jspsych.js"></script>
+    <link rel="stylesheet" href="jspsych/dist/jspsych.css" />
+
+    <!-- Built-in plugins (仅用到按钮响应) -->
+    <script src="jspsych/dist/plugin-html-button-response.js"></script>
+
+    <!-- Custom task plugins -->
+    <script src="js/jspsych-digit-span.js"></script>
+    <script src="js/jspsych-dsst.js"></script>
+
+    <!-- 可选样式，与主实验保持一致 -->
+    <link rel="stylesheet" href="css/baba-game.css" />
+    <link rel="stylesheet" href="css/cognitive-tasks.css" />
+
+    <style>
+        body { background:#7d7d7d; }
+        #jspsych-target { max-width:1200px; margin:0 auto; }
+    </style>
+</head>
+<body>
+    <div id="jspsych-target"></div>
+
+    <script>
+        // 简单 participant id
+        const pid = 'TEST_' + Date.now();
+
+        // 数字串任务总指导语
+        const digitSpanIntro = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <div style="color:white;text-align:center;max-width:800px;margin:0 auto;padding:40px 20px;">
+                    <h1 style="font-size:36px;margin-bottom:30px;">Digit Span Memory Test</h1>
+                    <div style="font-size:20px;line-height:1.8;text-align:left;margin-bottom:40px;">
+                        <p style="margin-bottom:20px;">
+                            <strong>Purpose:</strong> This task is designed to assess your memory capacity and working memory abilities.
+                        </p>
+                        <p style="margin-bottom:20px;">
+                            <strong>What you will do:</strong> We will play sequences of numbers through audio, and you will need to repeat them back according to specific instructions.
+                        </p>
+                        <p style="margin-bottom:20px;">
+                            <strong>Two phases:</strong>
+                        </p>
+                        <ul style="margin-left:30px;margin-bottom:20px;">
+                            <li><strong>Phase 1 (Forward):</strong> Listen to the numbers and repeat them in the <span style="color:#ff6b6b;font-weight:bold;">same order</span></li>
+                            <li><strong>Phase 2 (Backward):</strong> Listen to the numbers and repeat them in <span style="color:#ff6b6b;font-weight:bold;">reverse order</span></li>
+                        </ul>
+                        <p style="color:#ffd93d;font-weight:bold;">
+                            ⚠️ Important: Please listen carefully and respond as accurately as possible. The sequences will gradually become longer and more challenging.
+                        </p>
+                    </div>
+                    <button id="start-digit-span" class="baba-button" style="font-size:20px;padding:15px 30px;">Begin Digit Span Test</button>
+                </div>
+            `,
+            choices: ['Begin Digit Span Test'],
+            data: { task: 'digit_span_introduction', participant_id: pid }
+        };
+
+        // Digit-Span 正序
+        const digitSpanForward = {
+            type: jsPsychDigitSpan,
+            mode: 'forward',
+            starting_length: 3,
+            max_length: 9,
+            max_total_trials: 14,
+            participant_id: pid,
+            data: { task: 'digit_span_forward', participant_id: pid }
+        };
+
+        // 过渡页1 - Forward到Backward
+        const transition1 = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <div style="color:white;text-align:center;padding:40px 20px;">
+                    <h1 style="font-size:36px;margin-bottom:30px;">✅ Forward Part Completed!</h1>
+                    <p style="font-size:24px;margin-bottom:20px;">Great job on the forward digit span test.</p>
+                    <p style="font-size:20px;color:#ffd93d;margin-bottom:40px;">Next: <strong>Backward Digit Span</strong></p>
+                    <p style="font-size:18px;color:#a8e6cf;">In the backward test, you'll need to enter the numbers in <span style="color:#ff6b6b;font-weight:bold;">reverse order</span>.</p>
+                </div>
+            `,
+            choices: ['Continue to Backward Test'],
+            data: { task: 'digit_span_transition_1', participant_id: pid }
+        };
+
+        // 过渡页2 - Backward到DSST
+        const transition2 = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <div style="color:white;text-align:center;padding:40px 20px;">
+                    <h1 style="font-size:36px;margin-bottom:30px;">✅ Backward Part Completed!</h1>
+                    <p style="font-size:24px;margin-bottom:20px;">Excellent work on the backward digit span test.</p>
+                    <p style="font-size:20px;color:#ffd93d;margin-bottom:40px;">Next: <strong>Digit-Symbol Substitution Task</strong></p>
+                    <p style="font-size:18px;color:#a8e6cf;">This is a different type of cognitive test. You'll see symbols and need to match them to numbers.</p>
+                </div>
+            `,
+            choices: ['Continue to DSST'],
+            data: { task: 'digit_span_transition_2', participant_id: pid }
+        };
+
+        // Digit-Span 逆序
+        const digitSpanBackward = {
+            type: jsPsychDigitSpan,
+            mode: 'backward',
+            starting_length: 2,
+            max_length: 9,
+            max_total_trials: 14,
+            participant_id: pid,
+            data: { task: 'digit_span_backward', participant_id: pid }
+        };
+
+        // DSST 任务（使用默认参数即可）
+        const dsstTask = {
+            type: jsPsychDSST,
+            practice_count: 3,
+            test_count: 60,
+            time_limit: 60,
+            participant_id: pid,
+            data: { task: 'dsst', participant_id: pid }
+        };
+
+        const timeline = [digitSpanIntro, digitSpanForward, transition1, digitSpanBackward, transition2, dsstTask];
+
+        // 等待DOM和所有脚本加载完成
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, checking dependencies...');
+            
+            // 确保插件已加载
+            if (typeof jsPsychDigitSpan === 'undefined') {
+                console.error('jsPsychDigitSpan not loaded!');
+                return;
+            }
+            if (typeof jsPsychDSST === 'undefined') {
+                console.error('jsPsychDSST not loaded!');
+                return;
+            }
+            console.log('All plugins loaded successfully');
+
+            const jsPsych = initJsPsych({
+                display_element: document.getElementById('jspsych-target'),
+                override_safe_mode: true,
+                on_timeline_start: () => {
+                    console.log('Timeline started');
+                },
+                on_trial_start: (trial) => {
+                    console.log('Trial starting:', trial.type);
+                },
+                on_trial_finish: (data) => {
+                    console.log('Trial finished:', data);
+                },
+                on_finish: () => {
+                    const data = jsPsych.data.get().values();
+                    console.log('All tasks finished:', data);
+                    alert('All tasks finished! Check console for data.');
+                }
+            });
+
+            console.log('jsPsych initialized:', jsPsych);
+            console.log('Timeline:', timeline);
+
+            // 运行实验
+            jsPsych.run(timeline);
+        });
+    </script>
+</body>
+</html> 

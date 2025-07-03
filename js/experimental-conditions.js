@@ -67,7 +67,7 @@ const EXPERIMENTAL_CONDITIONS = {
         "low-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            push_obj: "TREE",      // 树通常不可移动
+            push_obj: "DICE",      // 骰子可以推动符合直觉
             destruct_obj: "BOMB",  // 保持炸弹作为对象
             destruct_property: "IMPACT" // 属性名：炸弹"撞击"物体与先验经验相关度较低
         }

@@ -1,699 +1,323 @@
 /**
- * jsPsych Digit Span Test Plugin
- * 数字广度测试插件，包括正序和倒序记忆测试
+ * jsPsych v8 Digit Span Plugin
+ * 支持正序/倒序数字广度测试，兼容jsPsych 8.x
  */
 
-var jsPsychDigitSpan = (function () {
+var jsPsychDigitSpan = (function() {
     'use strict';
 
     const info = {
         name: 'digit-span',
         version: '1.0.0',
         parameters: {
-            mode: {
-                type: 'string',
-                pretty_name: 'Test mode',
-                default: 'forward',
-                description: 'Test mode: forward or backward'
-            },
-            starting_length: {
-                type: 'int',
-                pretty_name: 'Starting length',
-                default: 3,
-                description: 'Starting sequence length'
-            },
-            max_length: {
-                type: 'int',
-                pretty_name: 'Maximum length',
-                default: 9,
-                description: 'Maximum sequence length'
-            },
-
-            max_total_trials: {
-                type: 'int',
-                pretty_name: 'Maximum total trials',
-                default: 14,
-                description: 'Maximum total number of trials'
-            },
-            digit_duration: {
-                type: 'float',
-                pretty_name: 'Digit duration',
-                default: 0.5,
-                description: 'Duration of each digit playback in seconds'
-            },
-            digit_interval: {
-                type: 'float',
-                pretty_name: 'Digit interval',
-                default: 1.0,
-                description: 'Interval between digits in seconds'
-            },
-            participant_id: {
-                type: 'string',
-                pretty_name: 'Participant ID',
-                default: '',
-                description: 'Participant identifier'
-            }
+            mode: { type: 'string', default: 'forward' },
+            starting_length: { type: 'int', default: 3 },
+            max_length: { type: 'int', default: 9 },
+            max_total_trials: { type: 'int', default: 14 },
+            digit_duration: { type: 'float', default: 0.5 },
+            digit_interval: { type: 'float', default: 1.0 },
+            participant_id: { type: 'string', default: '' }
         },
         data: {
-            mode: {
-                type: 'string',
-                description: 'Test mode (forward or backward)'
-            },
-            sequence: {
-                type: 'object',
-                description: 'The digit sequence that was played'
-            },
-            response: {
-                type: 'object',
-                description: 'The user response sequence'
-            },
-            correct: {
-                type: 'bool',
-                description: 'Whether the response was correct'
-            },
-            sequence_length: {
-                type: 'int',
-                description: 'Length of the sequence'
-            },
-            trial_number: {
-                type: 'int',
-                description: 'Trial number within current mode'
-            },
-            total_trials: {
-                type: 'int',
-                description: 'Total number of trials completed'
-            },
-            reaction_time: {
-                type: 'float',
-                description: 'Time taken to complete the response in seconds'
-            },
-            max_length_achieved: {
-                type: 'int',
-                description: 'Maximum sequence length correctly recalled'
-            },
-            mean_span: {
-                type: 'float',
-                description: 'Calculated mean span score'
-            }
+            mode: 'forward',
+            starting_length: 3,
+            max_length: 9,
+            max_total_trials: 14,
+            digit_duration: 0.5,
+            digit_interval: 1.0,
+            participant_id: ''
         }
     };
 
-    // 全局状态变量
-    let audioCache = {};
-    let isAudioLoaded = false;
-    let audioLoadingInProgress = false;
-
-    // 试验状态变量
-    let trialParams;
-    let currentLength;
-    let currentTrial;
-    let totalTrialsCompleted;
-    let consecutiveErrors; // 连续错误次数（用上机制）
-    let results;
-    let currentSequence;
-    let userInput;
-    let inputMode;
-    let sequencePlayed;
-    let showInstructions;
-    let startTime;
-    let responseStartTime;
-    let keyHandler;
-
-    async function loadAudio() {
-        if (isAudioLoaded) return;
-        
-        // 防止重复加载
-        if (audioLoadingInProgress) {
-            console.log('Audio loading already in progress, waiting...');
-            while (audioLoadingInProgress) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            return;
-        }
-        
-        audioLoadingInProgress = true;
-        
-        let loadedCount = 0;
-        
-        // 使用HTML Audio元素加载音频文件，避免CORS问题
-        for (let i = 0; i <= 9; i++) {
-            try {
-                const audio = new Audio();
-                
-                // 创建Promise来处理音频加载
-                const loadPromise = new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        reject(new Error('Audio loading timeout'));
-                    }, 5000); // 5秒超时
-                    
-                    audio.addEventListener('canplaythrough', () => {
-                        clearTimeout(timeout);
-                        resolve();
-                    }, { once: true });
-                    
-                    audio.addEventListener('error', () => {
-                        clearTimeout(timeout);
-                        reject(new Error(`Audio loading error: ${audio.error?.message || 'Unknown error'}`));
-                    }, { once: true });
-                });
-                
-                // 设置音频源
-                audio.src = `audio/digit_${i}.wav`;
-                audio.preload = 'auto';
-                
-                // 等待加载完成
-                await loadPromise;
-                
-                // 存储音频元素
-                audioCache[i] = audio;
-                loadedCount++;
-                console.log(`Loaded digit ${i} audio from WAV file`);
-                
-            } catch (error) {
-                console.warn(`Cannot load audio file for digit ${i}:`, error.message);
-                // 继续尝试加载其他文件
-                continue;
-            }
-        }
-        
-        isAudioLoaded = true;
-        audioLoadingInProgress = false;
-        
-        if (loadedCount === 10) {
-            console.log(`Audio loading complete. All 10 WAV files loaded successfully.`);
-        } else if (loadedCount > 0) {
-            console.log(`Audio loading complete. ${loadedCount}/10 WAV files loaded, ${10 - loadedCount} missing.`);
-        } else {
-            console.log(`No WAV files could be loaded. Please check audio file paths.`);
-            throw new Error('No audio files could be loaded. Please ensure WAV files are in the audio/ directory.');
-        }
-    }
-
-    function initializeTest(params) {
-        // 清理任何存在的事件监听器
-        if (keyHandler) {
-            document.removeEventListener('keydown', keyHandler);
-            keyHandler = null;
-        }
-        
-        trialParams = params;
-        currentLength = trialParams.starting_length;
-        currentTrial = 0;
-        totalTrialsCompleted = 0;
-        consecutiveErrors = 0; // 初始化连续错误次数
-        results = {
-            lengths: [],
-            responses: [],
-            correct: [],
-            reaction_times: []
-        };
-        
-        currentSequence = [];
-        userInput = [];
-        inputMode = false;
-        sequencePlayed = false;
-        showInstructions = true;
-        startTime = null;
-        responseStartTime = null;
-    }
-
-    function showInstructionsScreen(display_element, trialParams) {
-        // 清理可能存在的键盘监听器
-        if (keyHandler) {
-            document.removeEventListener('keydown', keyHandler);
-            keyHandler = null;
-        }
-        
-        const html = `
-            <div class="digit-span-container">
-                <h1 style="color: white; text-align: center; margin-bottom: 30px;">
-                    Digit Span Test - ${trialParams.mode === 'forward' ? 'Part 1' : 'Part 2'}
-                </h1>
-                
-                <div class="instructions-content" style="color: white; max-width: 800px; margin: 0 auto; font-size: 18px; line-height: 1.6;">
-                    ${getInstructionsText(trialParams.mode)}
-                </div>
-                
-                <div style="text-align: center; margin-top: 40px;">
-                    <button id="start-test-btn" class="baba-button" style="font-size: 20px; padding: 15px 30px;">
-                        Start Test
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        display_element.innerHTML = html;
-        
-        document.getElementById('start-test-btn').addEventListener('click', () => {
-            showInstructions = false;
-            generateNewSequence();
-            showTestScreen(display_element);
-        });
-    }
-
-    function getInstructionsText(mode) {
-        if (mode === 'forward') {
-            return `
-                <p><strong>Part 1: Forward Digit Span</strong></p>
-                <p>You will hear a series of digits played one by one.</p>
-                <p>After all digits are played, please enter the digits in the <strong style="color:red;">SAME ORDER</strong> you heard them.</p>
-                <br>
-                <p><strong>Example:</strong> If you hear "3-7-1", you should enter "3-7-1".</p>
-                <br>
-                <p>When you are ready, please click "Start Test".</p>
-            `;
-        } else {
-            return `
-                <p><strong>Part 2: Backward Digit Span</strong></p>
-                <p>You will hear a series of digits played one by one.</p>
-                <p>This time, please enter the digits in the <strong style="color:red;">REVERSE ORDER</strong>.</p>
-                <br>
-                <p><strong>Example:</strong> If you hear "3-7-1", you should enter "1-7-3".</p>
-                <br>
-                <p>When you are ready, please click "Start Test".</p>
-            `;
-        }
-    }
-
-    function generateNewSequence() {
-        currentSequence = [];
-        for (let i = 0; i < currentLength; i++) {
-            currentSequence.push(Math.floor(Math.random() * 10));
-        }
-        userInput = [];
-        inputMode = false;
-        sequencePlayed = false;
-    }
-
-    function showTestScreen(display_element) {
-        const html = `
-            <div class="digit-span-container">
-                <h2 style="color: white; text-align: center; margin-bottom: 20px;">
-                    Digit Span Test - ${trialParams.mode === 'forward' ? 'Part 1' : 'Part 2'}
-                </h2>
-                
-                <div style="color: white; text-align: center; margin-bottom: 30px; font-size: 18px;">
-                    Length: ${currentLength}
-                </div>
-                
-                <div style="color: white; text-align: center; margin-bottom: 30px; font-size: 22px;">
-                    ${trialParams.mode === 'forward' ? 'Please enter the numbers in <span style="color:red;font-weight:bold;">SAME ORDER</span>' : 'Please enter the numbers in <span style="color:red;font-weight:bold;">REVERSE ORDER</span>'}
-                </div>
-                
-                <div id="test-content" style="text-align: center;">
-                    ${getTestContentHTML()}
-                </div>
-            </div>
-        `;
-        
-        display_element.innerHTML = html;
-        setupTestEventListeners();
-    }
-
-    function getTestContentHTML() {
-        if (!sequencePlayed) {
-            return `
-                <div style="margin-bottom: 40px;">
-                    <p style="color: white; font-size: 18px; margin-bottom: 30px;">
-                        Please listen carefully to the number sequence. When playback is complete, you can enter your response.
-                    </p>
-                    
-                    <div style="margin-bottom: 30px;">
-                        <img src="../images/speaker.png" alt="Speaker" style="width: 100px; height: 100px;" onerror="this.style.display='none'">
-                    </div>
-                    
-                    <button id="play-sequence-btn" class="baba-button" style="font-size: 18px; padding: 12px 24px;">
-                        Start Playback
-                    </button>
-                </div>
-            `;
-        } else if (inputMode) {
-            return `
-                <div style="margin-bottom: 40px;">
-                    <p style="color: white; font-size: 18px; margin-bottom: 30px;">
-                        Please enter the numbers you heard ${trialParams.mode === 'forward' ? '(in order)' : '(in reverse order)'}
-                    </p>
-                    
-                    <div id="input-display" style="background: #333; border: 2px solid #666; border-radius: 10px; padding: 20px; margin: 20px auto; width: 400px; min-height: 60px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white;">
-                        ${userInput.join(' ') || 'Press number keys to input'}
-                    </div>
-                    
-                    <div style="margin-top: 30px;">
-                        <p style="color: #ccc; font-size: 14px;">
-                            Press number keys to input, Enter to confirm, Backspace to delete
-                        </p>
-                    </div>
-                    
-                    <button id="submit-response-btn" class="baba-button" style="font-size: 18px; padding: 12px 24px; margin-top: 20px;" ${userInput.length === currentSequence.length ? '' : 'disabled'}>
-                        Submit Response
-                    </button>
-                </div>
-            `;
-        }
-    }
-
-    function setupTestEventListeners() {
-        // 播放序列按钮
-        const playBtn = document.getElementById('play-sequence-btn');
-        if (playBtn) {
-            playBtn.addEventListener('click', () => {
-                playSequence();
-            });
-        }
-
-        // 提交响应按钮
-        const submitBtn = document.getElementById('submit-response-btn');
-        if (submitBtn) {
-            submitBtn.addEventListener('click', () => {
-                if (userInput.length === currentSequence.length) {
-                    recordTrial();
-                }
-            });
-        }
-
-        // 清理之前的键盘事件监听器
-        if (keyHandler) {
-            document.removeEventListener('keydown', keyHandler);
-        }
-
-        // 键盘事件
-        keyHandler = (event) => {
-            // 防止事件冒泡和默认行为
-            event.preventDefault();
-            event.stopPropagation();
-            
-            if (inputMode) {
-                if (event.key >= '0' && event.key <= '9') {
-                    if (userInput.length < currentSequence.length) {
-                        userInput.push(parseInt(event.key));
-                        updateInputDisplay();
-                        
-                        // 记录第一次输入的时间
-                        if (userInput.length === 1 && !responseStartTime) {
-                            responseStartTime = Date.now();
-                        }
-                    }
-                } else if (event.key === 'Backspace') {
-                    if (userInput.length > 0) {
-                        userInput.pop();
-                        updateInputDisplay();
-                    }
-                } else if (event.key === 'Enter') {
-                    if (userInput.length === currentSequence.length) {
-                        recordTrial();
-                    }
-                }
-            }
-        };
-        
-        document.addEventListener('keydown', keyHandler);
-    }
-
-    function updateInputDisplay() {
-        const inputDisplay = document.getElementById('input-display');
-        const submitBtn = document.getElementById('submit-response-btn');
-        
-        if (inputDisplay) {
-            inputDisplay.textContent = userInput.join(' ') || 'Press number keys to input';
-        }
-        
-        if (submitBtn) {
-            submitBtn.disabled = userInput.length !== currentSequence.length;
-        }
-    }
-
-    async function playSequence() {
-        console.log('Starting sequence playback:', currentSequence);
-        
-        // 禁用播放按钮
-        const playBtn = document.getElementById('play-sequence-btn');
-        if (playBtn) {
-            playBtn.disabled = true;
-            playBtn.textContent = 'Playing...';
-        }
-        
-        // 播放序列中的每个数字
-        for (let i = 0; i < currentSequence.length; i++) {
-            const digit = currentSequence[i];
-            await playDigit(digit);
-            
-            // 如果不是最后一个数字，等待间隔
-            if (i < currentSequence.length - 1) {
-                await wait(trialParams.digit_interval * 1000);
-            }
-        }
-        
-        // 序列播放完成后等待一小段时间
-        await wait(500);
-        
-        console.log('Sequence playback completed');
-        
-        sequencePlayed = true;
-        inputMode = true;
-        startTime = Date.now();
-        
-        // 更新显示
-        const testContent = document.getElementById('test-content');
-        if (testContent) {
-            testContent.innerHTML = getTestContentHTML();
-            setupTestEventListeners();
-        }
-    }
-
-    async function playDigit(digit) {
-        return new Promise((resolve, reject) => {
-            const audio = audioCache[digit];
-            if (!audio) {
-                reject(new Error(`No audio found for digit ${digit}`));
-                return;
-            }
-            
-            // 重置音频到开始位置
-            audio.currentTime = 0;
-            
-            // 播放音频
-            const playPromise = audio.play();
-            
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    console.log(`Playing digit ${digit}`);
-                    setTimeout(resolve, trialParams.digit_duration * 1000);
-                }).catch(error => {
-                    console.error(`Error playing digit ${digit}:`, error);
-                    reject(error);
-                });
-            } else {
-                // 旧浏览器不返回Promise
-                setTimeout(resolve, trialParams.digit_duration * 1000);
-            }
-        });
-    }
-
-    function wait(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    function checkResponse() {
-        let expected;
-        if (trialParams.mode === 'forward') {
-            expected = currentSequence;
-        } else {
-            expected = [...currentSequence].reverse();
-        }
-        
-        return JSON.stringify(userInput) === JSON.stringify(expected);
-    }
-
-    function recordTrial() {
-        const correct = checkResponse();
-        const reactionTime = responseStartTime ? (Date.now() - responseStartTime) / 1000 : null;
-        
-        // 记录试次结果
-        results.lengths.push(currentLength);
-        results.responses.push([...userInput]);
-        results.correct.push(correct);
-        results.reaction_times.push(reactionTime);
-        
-        totalTrialsCompleted++;
-        
-        console.log(`Trial ${totalTrialsCompleted}: Length ${currentLength}, Correct: ${correct}, Consecutive Errors: ${consecutiveErrors}`);
-        
-        // 检查是否应该结束测试（在调整长度之前检查）
-        if (shouldEndTask(correct)) {
-            finishTest();
-            return;
-        }
-        
-        // 实现2上机制（只有在不结束的情况下才调整长度）
-        if (correct) {
-            // 正确：重置连续错误次数，长度+1
-            consecutiveErrors = 0;
-            if (currentLength < trialParams.max_length) {
-                currentLength++;
-                console.log(`Correct! Length increased to ${currentLength}`);
-            }
-        } else {
-            // 错误：连续错误次数+1
-            consecutiveErrors++;
-            console.log(`Incorrect! Consecutive errors: ${consecutiveErrors}`);
-            
-            // 如果连续两次错误，长度-1
-            if (consecutiveErrors >= 2) {
-                const minLength = trialParams.mode === 'forward' ? 3 : 2;
-                if (currentLength > minLength) {
-                    currentLength--;
-                    console.log(`Two consecutive errors! Length decreased to ${currentLength}`);
-                }
-                consecutiveErrors = 0; // 重置连续错误次数
-            }
-        }
-        
-        // 生成新序列并继续
-        generateNewSequence();
-        showTestScreen(document.getElementById('jspsych-target'));
-    }
-
-    function shouldEndTask(correct) {
-        // 在长度且正确
-        if (currentLength === trialParams.max_length && correct) {
-            console.log(`Test ended: Reached max length ${trialParams.max_length} with correct response`);
-            return true;
-        }
-        
-        // 达到最大试验次数
-        if (totalTrialsCompleted >= trialParams.max_total_trials) {
-            console.log(`Test ended: Reached max trials (${trialParams.max_total_trials})`);
-            return true;
-        }
-        
-        return false;
-    }
-
-    function finishTest() {
-        // 清理事件监听器
-        if (keyHandler) {
-            document.removeEventListener('keydown', keyHandler);
-        }
-        
-        // 计算结果
-        const maxLength = calculateMaxLength();
-        const meanSpan = calculateMeanSpan();
-        
-        // 准备最终数据
-        const trialData = {
-            mode: trialParams.mode,
-            sequence: currentSequence,
-            response: userInput,
-            correct: checkResponse(),
-            sequence_length: currentLength,
-            total_trials: totalTrialsCompleted,
-            consecutive_errors: consecutiveErrors,
-            reaction_time: results.reaction_times[results.reaction_times.length - 1],
-            max_length_achieved: maxLength,
-            mean_span: meanSpan,
-            participant_id: trialParams.participant_id,
-            all_results: results,
-            adaptive_mechanism: '2down1up' // 标记使用的自适应机制
-        };
-        
-        // 使用Promise resolver结束试验
-        if (trialResolver) {
-            trialResolver(trialData);
-        }
-    }
-
-    function calculateMaxLength() {
-        let maxLength = 0;
-        for (let i = 0; i < results.correct.length; i++) {
-            if (results.correct[i]) {
-                maxLength = Math.max(maxLength, results.lengths[i]);
-            }
-        }
-        return maxLength;
-    }
-
-    function calculateMeanSpan() {
-        if (results.lengths.length === 0) return 0;
-        
-        // 按长度分组并计算正确率
-        const lengthStats = {};
-        for (let i = 0; i < results.lengths.length; i++) {
-            const length = results.lengths[i];
-            if (!lengthStats[length]) {
-                lengthStats[length] = { correct: 0, total: 0 };
-            }
-            lengthStats[length].total++;
-            if (results.correct[i]) {
-                lengthStats[length].correct++;
-            }
-        }
-        
-        // 找到50%正确率对应的长度
-        const baselineLength = trialParams.mode === 'forward' ? 2.5 : 1.5;
-        let targetLength = baselineLength;
-        
-        const sortedLengths = Object.keys(lengthStats).map(Number).sort((a, b) => a - b);
-        for (const length of sortedLengths) {
-            const accuracy = lengthStats[length].correct / lengthStats[length].total;
-            if (accuracy >= 0.5) {
-                targetLength = length;
-                break;
-            }
-        }
-        
-        // 如果所有长度都低于50%，使用最后一个长度
-        if (targetLength === baselineLength && sortedLengths.length > 0) {
-            targetLength = sortedLengths[sortedLengths.length - 1];
-        }
-        
-        return targetLength;
-    }
-
-    // 全局Promise resolver，用于控制试验完成
-    let trialResolver = null;
-
-    // 主要的试验函数
-    async function trialFunction(display_element, trial) {
-        console.log('Starting digit span trial with parameters:', trial);
-        
-        // 创建一个Promise，只有在试验真正完成时才resolve
-        return new Promise(async (resolve, reject) => {
-            trialResolver = resolve;
-            
-            try {
-                // 初始化测试状态
-                initializeTest(trial);
-                
-                // 加载音频
-                await loadAudio();
-                
-                // 显示说明页面
-                showInstructionsScreen(display_element, trial);
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-    // jsPsych v7 插件
     class DigitSpanPlugin {
         constructor(jsPsych) {
             this.jsPsych = jsPsych;
         }
 
-        static get info() {
-            return info;
-        }
-
         async trial(display_element, trial) {
-            return await trialFunction(display_element, trial);
+            // 保存jsPsych实例的引用
+            const jsPsychInstance = this.jsPsych;
+            
+            // 返回Promise以确保任务正确结束
+            return new Promise(async (resolve) => {
+                // 状态变量
+                let currentLength = trial.starting_length;
+                let totalTrialsCompleted = 0;
+                let consecutiveErrors = 0;
+                let results = { lengths: [], responses: [], correct: [], reaction_times: [] };
+                let currentSequence = [];
+                let userInput = [];
+                let inputMode = false;
+                let sequencePlayed = false;
+                let responseStartTime = null;
+                let testFinished = false;
+                let keyHandler = null;
+                let audioCache = {};
+
+            // 加载音频
+            async function loadAudio() {
+                console.log('Loading audio files...');
+                for (let i = 0; i <= 9; i++) {
+                    const audio = new Audio(`audio/digit_${i}.wav`);
+                    audio.preload = 'auto';
+                    await new Promise((resolve) => {
+                        audio.addEventListener('canplaythrough', resolve, { once: true });
+                        audio.addEventListener('error', (e) => {
+                            console.warn(`Audio ${i} failed to load:`, e);
+                            resolve();
+                        });
+                    });
+                    audioCache[i] = audio;
+                }
+                console.log('Audio loading completed');
+            }
+
+            function generateNewSequence() {
+                const pool = [0,1,2,3,4,5,6,7,8,9];
+                let seq = [];
+                let tempPool = [...pool];
+                for (let i = 0; i < currentLength; i++) {
+                    const idx = Math.floor(Math.random() * tempPool.length);
+                    seq.push(tempPool.splice(idx, 1)[0]);
+                }
+                return seq;
+            }
+
+            function showInstructions() {
+                console.log(`Showing instructions for ${trial.mode} digit span`);
+                display_element.innerHTML = `
+                    <div style="color:white;text-align:center;max-width:800px;margin:0 auto;padding:40px 20px;">
+                        <h1 style="font-size:36px;margin-bottom:30px;">${trial.mode === 'forward' ? 'Phase 1' : 'Phase 2'}: ${trial.mode === 'forward' ? 'Forward' : 'Backward'} Digit Span</h1>
+                        <p style="font-size:24px;line-height:1.6;margin-bottom:20px;">
+                            Enter the numbers in 
+                            <span style="color:#ff6b6b;font-weight:bold;font-size:28px;">
+                                ${trial.mode === 'forward' ? 'the same order' : 'reverse order'}
+                            </span>
+                        </p>
+                        <p style="font-size:20px;color:#ffd93d;margin-bottom:40px;">
+                            🎧 Ready to listen carefully!
+                        </p>
+                        <button id="start-btn" class="baba-button" style="font-size:20px;padding:15px 30px;">Start ${trial.mode === 'forward' ? 'Forward' : 'Backward'} Test</button>
+                    </div>
+                `;
+                document.getElementById('start-btn').onclick = () => {
+                    console.log('Start button clicked');
+                    currentSequence = generateNewSequence();
+                    showTestScreen();
+                };
+            }
+
+            function showTestScreen() {
+                display_element.innerHTML = `
+                    <div style="color:white;text-align:center;padding:40px 20px;">
+                        <h2 style="font-size:32px;margin-bottom:20px;">Sequence Length: ${currentLength}</h2>
+                        <p style="font-size:20px;color:#ffd93d;margin-bottom:30px;">
+                            🎧 Please listen carefully to the audio sequence!
+                        </p>
+                        <p style="font-size:18px;margin-bottom:40px;color:#a8e6cf;">
+                            Click the button below when you're ready to hear the numbers
+                        </p>
+                        <button id="play-btn" class="baba-button" style="font-size:20px;padding:15px 30px;">▶️ Play Sequence</button>
+                    </div>
+                `;
+                document.getElementById('play-btn').onclick = () => playSequence();
+            }
+
+            async function playSequence() {
+                document.getElementById('play-btn').disabled = true;
+                for (let i = 0; i < currentSequence.length; i++) {
+                    await playDigit(currentSequence[i]);
+                    if (i < currentSequence.length - 1) {
+                        await wait(trial.digit_interval * 1000);
+                    }
+                }
+                sequencePlayed = true;
+                showInputScreen();
+            }
+
+            async function playDigit(digit) {
+                const audio = audioCache[digit];
+                if (audio) {
+                    try {
+                        audio.currentTime = 0;
+                        await audio.play();
+                        await wait(trial.digit_duration * 1000);
+                    } catch (error) {
+                        console.warn(`Failed to play audio for digit ${digit}:`, error);
+                        await wait(trial.digit_duration * 1000);
+                    }
+                } else {
+                    console.log(`Playing digit ${digit} (no audio)`);
+                    await wait(trial.digit_duration * 1000);
+                }
+            }
+
+            function wait(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            function showInputScreen() {
+                inputMode = true;
+                userInput = [];
+                responseStartTime = null;
+                display_element.innerHTML = `
+                    <div style="color:white;text-align:center;padding:40px 20px;">
+                        <h2 style="font-size:32px;margin-bottom:20px;">Enter the Numbers</h2>
+                        <p style="font-size:20px;color:#ffd93d;margin-bottom:20px;">
+                            📝 Remember to enter them in 
+                            <span style="color:#ff6b6b;font-weight:bold;">
+                                ${trial.mode === 'forward' ? 'the same order' : 'reverse order'}
+                            </span>
+                        </p>
+                        <div id="input-display" style="background:#333;padding:30px;margin:30px auto;width:500px;min-height:80px;font-size:28px;border:3px solid #666;border-radius:10px;">
+                            ${userInput.join(' ') || 'Press number keys (0-9) to input'}
+                        </div>
+                        <p style="font-size:16px;color:#a8e6cf;margin-bottom:30px;">
+                            Use Backspace to delete • Press Enter or click Submit when done
+                        </p>
+                        <button id="submit-btn" class="baba-button" disabled style="font-size:20px;padding:15px 30px;">✅ Submit Answer</button>
+                    </div>
+                `;
+                setupInputHandlers();
+            }
+
+            function setupInputHandlers() {
+                const submitBtn = document.getElementById('submit-btn');
+                keyHandler = (event) => {
+                    if (!inputMode) return;
+                    if (event.key >= '0' && event.key <= '9') {
+                        if (userInput.length < currentSequence.length) {
+                            userInput.push(parseInt(event.key));
+                            updateInputDisplay();
+                            if (userInput.length === 1 && !responseStartTime) {
+                                responseStartTime = Date.now();
+                            }
+                        }
+                    } else if (event.key === 'Backspace') {
+                        if (userInput.length > 0) {
+                            userInput.pop();
+                            updateInputDisplay();
+                        }
+                    } else if (event.key === 'Enter') {
+                        if (userInput.length === currentSequence.length) {
+                            recordTrial();
+                        }
+                    }
+                };
+                document.addEventListener('keydown', keyHandler);
+                submitBtn.onclick = () => {
+                    if (userInput.length === currentSequence.length) {
+                        recordTrial();
+                    }
+                };
+            }
+
+            function updateInputDisplay() {
+                const inputDisplay = document.getElementById('input-display');
+                const submitBtn = document.getElementById('submit-btn');
+                if (inputDisplay) {
+                    if (userInput.length === 0) {
+                        inputDisplay.textContent = 'Press number keys (0-9) to input';
+                        inputDisplay.style.color = '#888';
+                    } else {
+                        inputDisplay.textContent = userInput.join(' ');
+                        inputDisplay.style.color = '#fff';
+                    }
+                }
+                if (submitBtn) {
+                    const isComplete = userInput.length === currentSequence.length;
+                    submitBtn.disabled = !isComplete;
+                    if (isComplete) {
+                        submitBtn.style.backgroundColor = '#4CAF50';
+                        submitBtn.textContent = '✅ Submit Answer (' + userInput.length + '/' + currentSequence.length + ')';
+                    } else {
+                        submitBtn.style.backgroundColor = '';
+                        submitBtn.textContent = 'Submit Answer (' + userInput.length + '/' + currentSequence.length + ')';
+                    }
+                }
+            }
+
+            function checkResponse() {
+                let expected = trial.mode === 'forward' ? currentSequence : [...currentSequence].reverse();
+                return JSON.stringify(userInput) === JSON.stringify(expected);
+            }
+
+            function recordTrial() {
+                inputMode = false;
+                document.removeEventListener('keydown', keyHandler);
+                const correct = checkResponse();
+                const reactionTime = responseStartTime ? (Date.now() - responseStartTime) / 1000 : null;
+                results.lengths.push(currentLength);
+                results.responses.push([...userInput]);
+                results.correct.push(correct);
+                results.reaction_times.push(reactionTime);
+                totalTrialsCompleted++;
+                
+                console.log(`Trial ${totalTrialsCompleted}: length=${currentLength}, correct=${correct}, consecutive_errors=${consecutiveErrors}`);
+                
+                if (shouldEndTask(correct)) {
+                    finishTest();
+                    return;
+                }
+                
+                if (correct) {
+                    consecutiveErrors = 0;
+                    if (currentLength < trial.max_length) currentLength++;
+                } else {
+                    consecutiveErrors++;
+                    if (consecutiveErrors >= 2) {
+                        const minLen = trial.mode === 'forward' ? 3 : 2;
+                        if (currentLength === minLen) {
+                            finishTest();
+                            return;
+                        }
+                        if (currentLength > minLen) currentLength--;
+                        consecutiveErrors = 0;
+                    }
+                }
+                currentSequence = generateNewSequence();
+                showTestScreen();
+            }
+
+            function shouldEndTask(correct) {
+                return (currentLength === trial.max_length && correct) || (totalTrialsCompleted >= trial.max_total_trials);
+            }
+
+            function finishTest() {
+                testFinished = true;
+                document.removeEventListener('keydown', keyHandler);
+                const maxLength = Math.max(...results.correct.map((c, i) => c ? results.lengths[i] : 0));
+                const trialData = {
+                    mode: trial.mode,
+                    sequence: currentSequence,
+                    response: userInput,
+                    correct: checkResponse(),
+                    sequence_length: currentLength,
+                    total_trials: totalTrialsCompleted,
+                    consecutive_errors: consecutiveErrors,
+                    max_length_achieved: maxLength,
+                    participant_id: trial.participant_id,
+                    all_results: results
+                };
+                
+                console.log('Digit span test finished:', trialData);
+                jsPsychInstance.finishTrial(trialData);
+                resolve(); // 解析Promise
+            }
+
+            // 主流程
+            console.log(`Starting digit span test (${trial.mode})`);
+            try {
+                await loadAudio();
+                console.log('Audio loaded successfully');
+            } catch (error) {
+                console.warn('Audio loading failed, continuing without audio:', error);
+            }
+            showInstructions();
+        });
         }
     }
 
-    // 调试信息
-    console.log('jsPsychDigitSpan plugin loaded:', DigitSpanPlugin);
-    console.log('Plugin info:', DigitSpanPlugin.info);
-
+    DigitSpanPlugin.info = info;
     return DigitSpanPlugin;
-
 })(); 

@@ -34,6 +34,12 @@ var jsPsychDSST = (function () {
                 type: 'string',
                 default: ''
             }
+        },
+        data: {
+            practice_count: 3,
+            test_count: 100,
+            time_limit: 90,
+            participant_id: ''
         }
     };
 
@@ -43,6 +49,9 @@ var jsPsychDSST = (function () {
         }
 
         async trial(display_element, trial) {
+            // 保存jsPsych实例的引用到类属性
+            this.jsPsychInstance = this.jsPsych;
+            
             // Promise wrapper to signal completion
             return new Promise(async (resolve) => {
                 this._resolver = resolve;
@@ -69,6 +78,7 @@ var jsPsychDSST = (function () {
                 this.timerInterval = null;
                 this.startTime = null;
 
+                console.log('Starting DSST task');
                 // begin
                 this.showNext(display_element, trial);
             });
@@ -101,7 +111,7 @@ var jsPsychDSST = (function () {
             switch (this.phase) {
                 case 'inst1':
                     this.renderInstructions(display_element, 'Digit–Symbol Substitution Task',
-                        `<p>You will first complete <strong>${this.practiceCount}</strong> practice trials.</p><p>For each symbol shown, press the corresponding digit key <strong>(1�?)</strong> as fast and accurately as possible.</p>`,
+                        `<p>You will first complete <strong>${this.practiceCount}</strong> practice trials.</p><p>For each symbol shown, press the corresponding digit key <strong>(1-9)</strong> as fast and accurately as possible.</p>`,
                         () => {
                             this.phase = 'practice';
                             this.currentIdx = 0;
@@ -166,7 +176,7 @@ var jsPsychDSST = (function () {
                     ${this.showPairTable()}
                     <div style="margin-top:40px; text-align:center;">
                         <img src="dsst symbol/${symbol}" style="width:100px; height:100px; border:4px solid #fff; background:#fff; padding:10px; box-sizing:border-box;">
-                        <p style="color:white; font-size:18px; margin-top:20px;">Press the corresponding digit (1�?)</p>
+                        <p style="color:white; font-size:18px; margin-top:20px;">Press the corresponding digit (1-9)</p>
                     </div>
                     <p style="color:white; margin-top:30px;">Practice ${this.currentIdx + 1} / ${this.practiceCount}</p>
                 </div>`;
@@ -271,7 +281,8 @@ var jsPsychDSST = (function () {
                     correct_flags: this.correctFlags,
                     reaction_times: this.reactionTimes
                 };
-                this.jsPsych.finishTrial(data);
+                console.log('DSST task finished:', data);
+                this.jsPsychInstance.finishTrial(data);
                 if (this._resolver) this._resolver();
             });
         }

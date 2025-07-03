@@ -105,36 +105,34 @@ var jsPsychRatingScale = (function () {
         }
 
         setupRatingContent(trial) {
-            if (!trial.question) {
-                switch (trial.rating_type) {
-                    case 'difficulty':
-                        trial.question = `According to your experience, how difficult was last level?`;
-                        trial.scale_labels = {
-                            [trial.scale_min]: 'Very Easy',
-                            [trial.scale_max]: 'Very Difficult'
-                        };
-                        break;
-                    case 'creativity':
-                        trial.question = `According to your experience, how creative do you think you were in last level?`;
-                        trial.scale_labels = {
-                            [trial.scale_min]: 'Not Creative',
-                            [trial.scale_max]: 'Very Creative'
-                        };
-                        break;
-                    case 'overall_performance':
-                        trial.question = 'Compared with people like your age, how would you rate your overall performance in this experiment?';
-                        trial.scale_labels = {
-                            [trial.scale_min]: 'Very Poor',
-                            [trial.scale_max]: 'Excellent'
-                        };
-                        break;
-                    default:
-                        trial.question = 'Please rate your experience:';
-                        trial.scale_labels = {
-                            [trial.scale_min]: 'Low',
-                            [trial.scale_max]: 'High'
-                        };
-                }
+            switch (trial.rating_type) {
+                case 'difficulty':
+                    trial.question = 'According to your experience, how difficult was last level?';
+                    trial.scale_labels = {
+                        [trial.scale_min]: 'Very Easy',
+                        [trial.scale_max]: 'Very Difficult'
+                    };
+                    break;
+                case 'creativity':
+                    trial.question = 'According to your experience, how creative do you think you were in last level?';
+                    trial.scale_labels = {
+                        [trial.scale_min]: 'Not Creative',
+                        [trial.scale_max]: 'Very Creative'
+                    };
+                    break;
+                case 'overall_performance':
+                    trial.question = 'Compared with people like your age, how would you rate your overall performance in this experiment?';
+                    trial.scale_labels = {
+                        [trial.scale_min]: 'Worse than everyone else',
+                        [trial.scale_max]: 'Better than everyone else'
+                    };
+                    break;
+                default:
+                    trial.question = 'Please rate your experience:';
+                    trial.scale_labels = {
+                        [trial.scale_min]: 'Low',
+                        [trial.scale_max]: 'High'
+                    };
             }
         }
 

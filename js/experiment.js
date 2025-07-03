@@ -12,9 +12,6 @@ const jsPsych = initJsPsych({
         // 实验结束时的处理
         console.log('Experiment completed');
 
-        // （可选）在本地下载完整数据备份
-        // jsPsych.data.get().localSave('csv', 'raw_data.csv');
-
         // 如果来自 Prolific，则自动重定向至完成链接
         const pid = jsPsych.data.getURLVariable('PROLIFIC_PID');
         if (pid) {
@@ -23,8 +20,13 @@ const jsPsych = initJsPsych({
             return; // 结束
         }
 
-        // 否则默认展示 JSON 数据（原有功能）
-        jsPsych.data.displayData('json');
+        // 否则调用实验控制器的数据保存函数
+        if (window.experimentController) {
+            window.experimentController.saveExperimentData();
+        } else {
+            // 备用方案：显示JSON数据
+            jsPsych.data.displayData('json');
+        }
     }
 });
 
@@ -106,6 +108,9 @@ class ExperimentController {
         
         // 5. 数字广度测试 - 正序
         timeline.push(this.createDigitSpanForwardTrial());
+        
+        // 5b. 过渡页面：提示即将开始倒序
+        timeline.push(this.createDigitSpanTransitionTrial());
         
         // 6. 数字广度测试 - 倒序
         timeline.push(this.createDigitSpanBackwardTrial());
@@ -481,16 +486,28 @@ class ExperimentController {
             window_size: [window.innerWidth, window.innerHeight]
         };
         
-        // 获取各任务数据
+        // 正确获取各任务数据
         const babaGameData = allData.filter({trial_type: 'baba-game'}).values();
+        
+        // 数字串数据 - 从插件返回的数据中提取
+        const digitSpanTrials = allData.filter(data => data.task === 'digit_span_forward' || data.task === 'digit_span_backward').values();
         const digitSpanData = {
-            forward: allData.filter({trial_type: 'digit_span_forward'}).values(),
-            backward: allData.filter({trial_type: 'digit_span_backward'}).values()
+            forward: digitSpanTrials.filter(data => data.task === 'digit_span_forward'),
+            backward: digitSpanTrials.filter(data => data.task === 'digit_span_backward')
         };
-        const dsstData = allData.filter({trial_type: 'dsst_task'}).values();
-        const verbalFluencyData = allData.filter({trial_type: 'verbal_fluency'}).values();
-        const autData = allData.filter({trial_type: 'aut_task'}).values();
-        const questionnaireData = allData.filter(data => data.trial_type && data.trial_type.includes('questionnaire')).values();
+        
+        // DSST数据 - 从插件返回的数据中提取
+        const dsstData = allData.filter(data => data.task === 'dsst').values();
+        
+        // 其他认知任务数据
+        const verbalFluencyData = allData.filter(data => data.task === 'verbal_fluency').values();
+        const autData = allData.filter(data => data.task === 'aut').values();
+        
+        // 问卷数据 - 只包含真正的问卷数据
+        const questionnaireData = allData.filter(data => 
+            data.trial_type && 
+            (data.trial_type.includes('questionnaire') || data.question_source)
+        ).values();
         
         // 收集玩家反馈数据
         const playerFeedbackData = allData.filter({trial_type: 'player_feedback'}).values();
@@ -534,12 +551,9 @@ class ExperimentController {
             // 完成任务列表
             tasks_completed: tasksCompleted,
             
-            // 各任务详细数据
+            // 各任务详细数据 - 只包含真正的任务数据
             baba_game_data: babaGameData,
-            digit_span_data: {
-                forward: digitSpanData.forward,
-                backward: digitSpanData.backward
-            },
+            digit_span_data: digitSpanData,
             dsst_data: dsstData,
             verbal_fluency_data: verbalFluencyData,
             aut_data: autData,
@@ -577,12 +591,11 @@ class ExperimentController {
         // 显示感谢信息
         document.body.innerHTML = `
             <div style="text-align: center; padding: 50px; font-family: Verdana, Arial, sans-serif; background-color: #7d7d7d; color: white; min-height: 100vh;">
-                <h1>实验完成！</h1>
+                <h1>Experiment completed!</h1>
                 <h2>Thank you for participating!</h2>
-                <p>您的数据已保存。参与者ID: ${this.participantId}</p>
-                <p>感谢您的参与，实验数据对我们的研究非常有价值。</p>
-                <p style="margin-top: 15px;">如果您看到下载对话框，请保存数据文件并将其发送给实验者。</p>
-                <button onclick="location.reload()" style="
+                <p>Your data saved. Participant ID: ${this.participantId}</p>
+                <p>Thank you for your participation. The data from this experiment is valuable to our research.</p>
+                <button onclick="window.close()" style="
                     background-color: #4caf50; 
                     color: white; 
                     border: none; 
@@ -591,7 +604,7 @@ class ExperimentController {
                     border-radius: 8px; 
                     cursor: pointer; 
                     margin-top: 20px;
-                ">开始新的实验</button>
+                ">Exit</button>
             </div>
         `;
     }
@@ -602,6 +615,7 @@ class ExperimentController {
             stimulus: `
                 <h1 style="color:white;">Digit–Symbol Substitution Task (DSST)</h1>
                 <div style="color:white; max-width:800px; margin:0 auto; font-size:18px; line-height:1.6; text-align:left;">
+                    <p>You have completed the digit span test. Now you will do the digit–symbol substitution task (DSST).</p>
                     <p>The DSST measures <strong>processing speed</strong> and <strong>associative learning</strong>.</p>
                     <p>You will see a table that pairs digits (1–9) with unique symbols.</p>
                     <p>Your task is to press the correct digit key that matches each symbol as quickly and accurately as possible.</p>
@@ -712,6 +726,23 @@ class ExperimentController {
             }
         };
     }
+
+    // 新增：正序结束后到倒序的过渡页面
+    createDigitSpanTransitionTrial() {
+        return {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <div style="color: white; max-width: 700px; margin: 0 auto; font-size: 18px; line-height: 1.8; text-align: center;">
+                    <h2 style="color: white; margin-bottom: 20px;">Part 2: Backward Digit Span</h2>
+                    <p>You have completed the forward digit span.</p>
+                    <p>Next, you will hear digit sequences again, but this time you need to enter them in <strong>reverse order</strong>.</p>
+                    <p>Click Continue when you are ready.</p>
+                </div>
+            `,
+            choices: ['Continue'],
+            data: { trial_type: 'digit_span_transition', participant_id: this.participantId }
+        };
+    }
 }
 
 // 页面加载完成后启动实验
@@ -736,6 +767,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 初始化实验控制器
         const experimentController = new ExperimentController();
+        window.experimentController = experimentController; // 保存到全局变量
         console.log('实验控制器初始化成功');
         
         // 创建并运行实验
@@ -753,9 +785,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // 显示错误信息
         document.getElementById('jspsych-target').innerHTML = `
             <div style="padding: 50px; text-align: center; font-family: Arial, sans-serif;">
-                <h1 style="color: red;">实验加载失败</h1>
-                <p style="color: #666; margin: 20px 0;">错误详情: ${error.message}</p>
-                <p style="color: #666;">请检查浏览器控制台获取更多信息。</p>
+                <h1 style="color: red;">Failed to load experiment</h1>
+                <p style="color: #666; margin: 20px 0;">Error details: ${error.message}</p>
+                <p style="color: #666;">Please check the browser console for more information.</p>
                 <button onclick="location.reload()" style="
                     background-color: #007cba; 
                     color: white; 
@@ -765,7 +797,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     border-radius: 4px; 
                     cursor: pointer; 
                     margin-top: 20px;
-                ">重新加载页面</button>
+                ">Reload page</button>
             </div>
                  `;
      }
@@ -781,8 +813,8 @@ setTimeout(function() {
         if (target && target.innerHTML.trim() === '') {
             target.innerHTML = `
                 <div style="padding: 50px; text-align: center; font-family: Arial, sans-serif;">
-                    <h2>正在加载实验...</h2>
-                    <p>如果此消息持续显示，请检查浏览器控制台获取错误信息。</p>
+                    <h2>Loading experiment...</h2>
+                    <p>If this message persists, please check the browser console for error information.</p>
                 </div>
             `;
         }

@@ -269,6 +269,21 @@
             // Group 3: DEM
             groups.demographics = questions.filter(q => q.source === 'DEM');
             
+            // Get attention check questions
+            const attentionChecks = questions.filter(q => q.source === 'ATTENTION_CHECK');
+            
+            // Insert attention check 1 into creativity group (second to last position)
+            if (attentionChecks.length >= 1 && groups.creativity.length > 0) {
+                const insertIndex = Math.max(0, groups.creativity.length - 1);
+                groups.creativity.splice(insertIndex, 0, attentionChecks[0]);
+            }
+            
+            // Insert attention check 2 into aarc group (second to last position)
+            if (attentionChecks.length >= 2 && groups.aarc.length > 0) {
+                const insertIndex = Math.max(0, groups.aarc.length - 1);
+                groups.aarc.splice(insertIndex, 0, attentionChecks[1]);
+            }
+            
             return groups;
         }
         
@@ -330,14 +345,21 @@
                             >${choice}</button>`;
                     });
                     
+                    // Handle prompt for likert questions
+                    let promptHtml = '';
+                    if (question.prompt) {
+                        promptHtml = `<div class="question-prompt">${question.prompt}</div>`;
+                    }
+                    
                     trials.push({
                         type: jsPsychHtmlKeyboardResponse,
                         stimulus: `
                             <div style="width:100%; max-width:800px; margin:0 auto; overflow:hidden;">
                                 ${progressBar}
-                                <div style="color:white; font-size:22px; margin-bottom:30px; text-align:center;">
+                                <div style="color:white; font-size:22px; margin-bottom:20px; text-align:center;">
                                     ${question.question}
                                 </div>
+                                ${promptHtml}
                                 <div style="display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:center; margin-bottom:20px;">
                                     ${buttonsHTML}
                                 </div>
@@ -353,7 +375,9 @@
                             participant_id: participantId,
                             questionId: question.id,
                             questionSource: question.source,
-                            questionType: question.type
+                            questionType: question.type,
+                            is_attention_check: question.is_attention_check || false,
+                            correct_answer: question.correct_answer || null
                         },
                         on_load: function() {
                             let selectedChoice = null;
@@ -393,6 +417,10 @@
                             // Add click event listener to confirm button
                             confirmBtn.addEventListener('click', function() {
                                 if (!this.disabled && selectedChoice !== null) {
+                                    // Check if this is an attention check question
+                                    const isCorrect = question.is_attention_check ? 
+                                        (selectedChoice + 1 === question.correct_answer) : null;
+                                    
                                     // End trial and pass the selected value
                                     jsPsych.finishTrial({
                                         rt: performance.now(),
@@ -402,7 +430,10 @@
                                         question_type: question.type,
                                         question_response: {
                                             [`Q${question.id}`]: selectedChoice + 1 // +1 to match original 1-5 scale
-                                        }
+                                        },
+                                        is_attention_check: question.is_attention_check || false,
+                                        correct_answer: question.correct_answer || null,
+                                        is_correct: isCorrect
                                     });
                                 }
                             });
@@ -422,14 +453,21 @@
                             >${choice}</button>`;
                     });
                     
+                    // Handle prompt for option questions
+                    let promptHtml = '';
+                    if (question.prompt) {
+                        promptHtml = `<div class="question-prompt">${question.prompt}</div>`;
+                    }
+                    
                     trials.push({
                         type: jsPsychHtmlKeyboardResponse,
                         stimulus: `
                             <div style="width:100%; max-width:800px; margin:0 auto; overflow:hidden;">
                                 ${progressBar}
-                                <div style="color:white; font-size:22px; margin-bottom:30px; text-align:center;">
+                                <div style="color:white; font-size:22px; margin-bottom:20px; text-align:center;">
                                     ${question.question}
                                 </div>
+                                ${promptHtml}
                                 <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%;">
                                     ${buttonsHTML}
                                 </div>
@@ -445,7 +483,9 @@
                             participant_id: participantId,
                             questionId: question.id,
                             questionSource: question.source,
-                            questionType: question.type
+                            questionType: question.type,
+                            is_attention_check: question.is_attention_check || false,
+                            correct_answer: question.correct_answer || null
                         },
                         on_load: function() {
                             let selectedChoice = null;
@@ -485,6 +525,10 @@
                             // Add click event listener to confirm button
                             confirmBtn.addEventListener('click', function() {
                                 if (!this.disabled && selectedChoice !== null) {
+                                    // Check if this is an attention check question
+                                    const isCorrect = question.is_attention_check ? 
+                                        (selectedChoice + 1 === question.correct_answer) : null;
+                                    
                                     // End trial and pass the selected value
                                     jsPsych.finishTrial({
                                         rt: performance.now(),
@@ -494,7 +538,10 @@
                                         question_type: question.type,
                                         question_response: {
                                             [`Q${question.id}`]: buttonChoices[selectedChoice]
-                                        }
+                                        },
+                                        is_attention_check: question.is_attention_check || false,
+                                        correct_answer: question.correct_answer || null,
+                                        is_correct: isCorrect
                                     });
                                 }
                             });
