@@ -16,7 +16,7 @@ const jsPsych = initJsPsych({
         if (pid) {
             // Please replace XXXXXXX with the Completion Code provided by Prolific
             // window.location.href = 'https://app.prolific.co/submissions/complete?cc=XXXXXXX'
-            window.location.href = 'https://app.prolific.com/submissions/complete?cc=C15ZGKKO';
+            window.location.href = 'https://app.prolific.com/submissions/complete?cc=C142IN0V';
             return; // End
         }
 
