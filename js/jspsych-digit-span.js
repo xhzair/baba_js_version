@@ -32,6 +32,7 @@ var jsPsychDigitSpan = (function() {
     class DigitSpanPlugin {
         constructor(jsPsych) {
             this.jsPsych = jsPsych;
+            this.trials = []; // initialize trials array
         }
 
         async trial(display_element, trial) {
@@ -53,6 +54,8 @@ var jsPsychDigitSpan = (function() {
                 let testFinished = false;
                 let keyHandler = null;
                 let audioCache = {};
+                let trials = []; // 将trials移到函数作用域内
+                let startTime = Date.now(); // 添加startTime变量
 
             // load audio
             async function loadAudio() {
@@ -248,6 +251,19 @@ var jsPsychDigitSpan = (function() {
                 results.reaction_times.push(reactionTime);
                 totalTrialsCompleted++;
                 
+                // record detailed trial data
+                const trialDetail = {
+                    trial_number: totalTrialsCompleted,
+                    span_length: currentLength,
+                    sequence: currentSequence,
+                    user_response: userInput,
+                    correct: correct,
+                    reaction_time: reactionTime,
+                    consecutive_errors_before: consecutiveErrors,
+                    timestamp: Date.now()
+                };
+                trials.push(trialDetail); // 使用局部变量trials
+                
                 if (shouldEndTask(correct)) {
                     finishTest();
                     return;
@@ -280,17 +296,21 @@ var jsPsychDigitSpan = (function() {
                 testFinished = true;
                 document.removeEventListener('keydown', keyHandler);
                 const maxLength = Math.max(...results.correct.map((c, i) => c ? results.lengths[i] : 0));
+                const correctCount = results.correct.filter(Boolean).length; // 计算正确数量
                 const trialData = {
-                    mode: trial.mode,
-                    sequence: currentSequence,
-                    response: userInput,
-                    correct: checkResponse(),
-                    sequence_length: currentLength,
+                    participant_id: trial.participant_id,
+                    task_version: '1.0.0',
+                    mode: trial.mode, // 'forward' or 'backward'
+                    max_span: maxLength, // 使用计算出的最大广度
+                    total_correct: correctCount,
                     total_trials: totalTrialsCompleted,
                     consecutive_errors: consecutiveErrors,
-                    max_length_achieved: maxLength,
-                    participant_id: trial.participant_id,
-                    all_results: results
+                    trials: trials, // 使用局部变量trials
+                    response_times: results.reaction_times,
+                    consecutive_errors_count: consecutiveErrors,
+                    task_completion_time: (Date.now() - startTime) / 1000, // 使用局部变量startTime
+                    audio_used: trial.use_audio || false,
+                    digit_duration: trial.digit_duration || 1.0
                 };
                 
                 jsPsychInstance.finishTrial(trialData);

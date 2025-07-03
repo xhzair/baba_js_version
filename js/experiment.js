@@ -485,41 +485,72 @@ class ExperimentController {
             window_size: [window.innerWidth, window.innerHeight]
         };
         
-        // Correctly get each task data
+        // Correctly get each task data - Use more specific filtering to avoid duplicates
         const babaGameData = allData.filter({trial_type: 'baba-game'}).values();
         
         // Digit span data - Extract from plugin return data
-        const digitSpanTrials = allData.filter(data => data.task === 'digit_span_forward' || data.task === 'digit_span_backward').values();
+        const digitSpanTrials = allData.filter(data => data.trial_type === 'digit-span').values();
         const digitSpanData = {
-            forward: digitSpanTrials.filter(data => data.task === 'digit_span_forward'),
-            backward: digitSpanTrials.filter(data => data.task === 'digit_span_backward')
+            forward: digitSpanTrials.filter(data => data.mode === 'forward'),
+            backward: digitSpanTrials.filter(data => data.mode === 'backward')
         };
         
         // DSST data - Extract from plugin return data
-        const dsstData = allData.filter(data => data.task === 'dsst').values();
+        const dsstData = allData.filter(data => data.trial_type === 'dsst').values();
         
         // Other cognitive task data
-        const verbalFluencyData = allData.filter(data => data.task === 'verbal_fluency').values();
-        const autData = allData.filter(data => data.task === 'aut').values();
+        const verbalFluencyData = allData.filter(data => data.trial_type === 'verbal-fluency').values();
+        const autData = allData.filter(data => data.trial_type === 'aut').values();
         
         // Questionnaire data - Only include true questionnaire data
         const questionnaireData = allData.filter(data => 
             data.trial_type && 
-            (data.trial_type.includes('questionnaire') || data.question_source)
+            (data.trial_type === 'html-keyboard-response' && data.question_source)
         ).values();
+        
+        // Remove duplicates by trial_index and ensure only task-specific data
+        const removeDuplicates = (dataArray, taskType) => {
+            const seen = new Set();
+            return dataArray.filter(item => {
+                // Only include items that match the specific task type
+                if (item.trial_type !== taskType) {
+                    return false;
+                }
+                
+                // Remove duplicates by trial_index
+                if (item.trial_index !== undefined) {
+                    if (seen.has(item.trial_index)) {
+                        return false;
+                    }
+                    seen.add(item.trial_index);
+                }
+                return true;
+            });
+        };
+        
+        // Apply deduplication to all data arrays with task-specific filtering
+        const deduplicatedBabaGameData = removeDuplicates(babaGameData, 'baba-game');
+        const deduplicatedDigitSpanData = {
+            forward: removeDuplicates(digitSpanData.forward, 'digit-span'),
+            backward: removeDuplicates(digitSpanData.backward, 'digit-span')
+        };
+        const deduplicatedDsstData = removeDuplicates(dsstData, 'dsst');
+        const deduplicatedVerbalFluencyData = removeDuplicates(verbalFluencyData, 'verbal-fluency');
+        const deduplicatedAutData = removeDuplicates(autData, 'aut');
+        const deduplicatedQuestionnaireData = removeDuplicates(questionnaireData, 'html-keyboard-response');
         
         // Collect player feedback data
         const playerFeedbackData = allData.filter({trial_type: 'player_feedback'}).values();
         
         // Determine task completion status
         const tasksCompleted = [];
-        if (babaGameData.length > 0) tasksCompleted.push('baba_game');
-        if (digitSpanData.forward.length > 0) tasksCompleted.push('digit_span_forward');
-        if (digitSpanData.backward.length > 0) tasksCompleted.push('digit_span_backward');
-        if (dsstData.length > 0) tasksCompleted.push('dsst');
-        if (verbalFluencyData.length > 0) tasksCompleted.push('verbal_fluency');
-        if (autData.length > 0) tasksCompleted.push('aut');
-        if (questionnaireData.length > 0) tasksCompleted.push('questionnaire');
+        if (deduplicatedBabaGameData.length > 0) tasksCompleted.push('baba_game');
+        if (deduplicatedDigitSpanData.forward.length > 0) tasksCompleted.push('digit_span_forward');
+        if (deduplicatedDigitSpanData.backward.length > 0) tasksCompleted.push('digit_span_backward');
+        if (deduplicatedDsstData.length > 0) tasksCompleted.push('dsst');
+        if (deduplicatedVerbalFluencyData.length > 0) tasksCompleted.push('verbal_fluency');
+        if (deduplicatedAutData.length > 0) tasksCompleted.push('aut');
+        if (deduplicatedQuestionnaireData.length > 0) tasksCompleted.push('questionnaire');
         
         // Determine completion status
         let completionStatus = 'completed';
@@ -550,20 +581,17 @@ class ExperimentController {
             // Completed tasks list
             tasks_completed: tasksCompleted,
             
-            // Each task detailed data - Only include true task data
-            baba_game_data: babaGameData,
-            digit_span_data: digitSpanData,
-            dsst_data: dsstData,
-            verbal_fluency_data: verbalFluencyData,
-            aut_data: autData,
-            questionnaire_data: questionnaireData,
+            // Each task detailed data - Only include true task data (deduplicated)
+            baba_game_data: deduplicatedBabaGameData,
+            digit_span_data: deduplicatedDigitSpanData,
+            dsst_data: deduplicatedDsstData,
+            verbal_fluency_data: deduplicatedVerbalFluencyData,
+            aut_data: deduplicatedAutData,
+            questionnaire_data: deduplicatedQuestionnaireData,
             
             // Game progress data
             completed_levels: this.completedLevels,
             unlocked_levels: this.unlockedLevels,
-            
-            // Raw trial data
-            raw_trial_data: allData.values(),
             
             // Player feedback data
             player_feedback_data: playerFeedbackData

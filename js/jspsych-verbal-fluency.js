@@ -11,6 +11,53 @@ var jsPsychVerbalFluency = (function(){
             practice_category: { type: 'string', default: 'Tools' },
             test_category: { type: 'string', default: 'Animals' },
             time_limit: { type: 'int', default: 60 } // seconds
+        },
+        data: {
+            participant_id: {
+                type: 'string',
+                description: 'Participant identifier'
+            },
+            practice_raw: {
+                type: 'string',
+                description: 'Raw practice input text'
+            },
+            practice_list: {
+                type: 'array',
+                description: 'List of practice words'
+            },
+            test_raw: {
+                type: 'string',
+                description: 'Raw test input text'
+            },
+            test_list: {
+                type: 'array',
+                description: 'List of test words'
+            },
+            test_count: {
+                type: 'int',
+                description: 'Number of test words generated'
+            },
+            used_time: {
+                type: 'float',
+                description: 'Time used for the test'
+            },
+            word_timestamps: {
+                type: 'array',
+                description: 'Timestamps for each word input'
+            },
+            response_intervals: {
+                type: 'array',
+                description: 'Intervals between word inputs'
+            },
+            response_analysis: {
+                type: 'object',
+                description: 'Analysis of response patterns'
+            },
+            task: {
+                type: 'string',
+                description: 'Task identifier',
+                default: 'verbal_fluency'
+            }
         }
     };
 
@@ -177,12 +224,12 @@ var jsPsychVerbalFluency = (function(){
 
         /* ---------- Utility ---------- */
         finish(){
-            // 检查是否有尚未记录时间戳的最后一个单�?
+            // 检查是否有尚未记录时间戳的最后一个单词
             const finalWords = this.testInput.split(',').map(w => w.trim()).filter(w => w);
             if (finalWords.length > 0 && (this.wordTimestamps.length === 0 || 
                 finalWords[finalWords.length - 1] !== this.wordTimestamps[this.wordTimestamps.length - 1]?.word)) {
                 
-                // 添加最后一个单词的时间�?
+                // 添加最后一个单词的时间
                 const lastWordTime = this.usedTime || this.timeLimit;
                 this.wordTimestamps.push({
                     word: finalWords[finalWords.length - 1],
@@ -208,7 +255,7 @@ var jsPsychVerbalFluency = (function(){
             const maxInterval = responseIntervals.length > 0 ? 
                 Math.max(...responseIntervals) : 0;
                 
-            // 标准差计�?
+            // 标准差计算
             let stdDeviation = 0;
             if (responseIntervals.length > 1) {
                 const squaredDiffs = responseIntervals.map(val => Math.pow(val - averageInterval, 2));
@@ -234,7 +281,8 @@ var jsPsychVerbalFluency = (function(){
                 },
                 first_third_count: Math.floor(this.testNames.length / 3),
                 middle_third_count: Math.floor(this.testNames.length / 3),
-                last_third_count: this.testNames.length - 2 * Math.floor(this.testNames.length / 3)
+                last_third_count: this.testNames.length - 2 * Math.floor(this.testNames.length / 3),
+                task: 'verbal_fluency'
             };
             this.jsPsych.finishTrial(data);
             if(this._resolve) this._resolve();

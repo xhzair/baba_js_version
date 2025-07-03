@@ -134,6 +134,7 @@
     <script src="js/jspsych-dsst.js"></script>
     <script src="js/jspsych-aut.js"></script>
     <script src="js/jspsych-verbal-fluency.js"></script>
+    <script src="js/jspsych-questionnaire.js"></script>
     <script src="js/questionnaire-data.js"></script>
     
     <!-- Custom questionnaire utilities -->
@@ -421,6 +422,95 @@
                                     const isCorrect = question.is_attention_check ? 
                                         (selectedChoice + 1 === question.correct_answer) : null;
                                     
+                                    // If attention check failed, show warning and don't proceed
+                                    if (question.is_attention_check && !isCorrect) {
+                                        // Create attention check warning popup
+                                        const warningOverlay = document.createElement('div');
+                                        warningOverlay.id = 'attention-warning-overlay';
+                                        warningOverlay.style.cssText = `
+                                            position: fixed;
+                                            top: 0;
+                                            left: 0;
+                                            width: 100%;
+                                            height: 100%;
+                                            background-color: rgba(0, 0, 0, 0.7);
+                                            display: flex;
+                                            justify-content: center;
+                                            align-items: center;
+                                            z-index: 10000;
+                                            font-family: Arial, sans-serif;
+                                        `;
+                                        
+                                        const messageBox = document.createElement('div');
+                                        messageBox.style.cssText = `
+                                            background-color: white;
+                                            padding: 30px;
+                                            border-radius: 10px;
+                                            text-align: center;
+                                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                                            max-width: 500px;
+                                        `;
+                                        
+                                        const title = document.createElement('h2');
+                                        title.textContent = 'Attention Check Failed';
+                                        title.style.cssText = `
+                                            color: #f44336;
+                                            margin-bottom: 20px;
+                                            font-size: 24px;
+                                        `;
+                                        
+                                        const message = document.createElement('p');
+                                        message.textContent = 'We detected that you may not have read the question carefully. Please re-answer this question and read all options carefully.';
+                                        message.style.cssText = `
+                                            color: #333;
+                                            font-size: 16px;
+                                            margin-bottom: 20px;
+                                            line-height: 1.5;
+                                        `;
+                                        
+                                        const button = document.createElement('button');
+                                        button.textContent = 'I Understand';
+                                        button.className = 'baba-button';
+                                        button.style.cssText = `
+                                            background-color: #4CAF50;
+                                            border: none;
+                                            color: white;
+                                            padding: 10px 20px;
+                                            text-align: center;
+                                            text-decoration: none;
+                                            display: inline-block;
+                                            font-size: 16px;
+                                            margin: 10px 2px;
+                                            cursor: pointer;
+                                            border-radius: 5px;
+                                        `;
+                                        
+                                        messageBox.appendChild(title);
+                                        messageBox.appendChild(message);
+                                        messageBox.appendChild(button);
+                                        warningOverlay.appendChild(messageBox);
+                                        document.body.appendChild(warningOverlay);
+                                        
+                                        // Click button to close warning and reset
+                                        button.addEventListener('click', () => {
+                                            warningOverlay.remove();
+                                            // Reset the selection
+                                            selectedChoice = null;
+                                            confirmBtn.disabled = true;
+                                            confirmBtn.style.backgroundColor = '#888888';
+                                            confirmBtn.style.cursor = 'not-allowed';
+                                            selectionText.textContent = '';
+                                            
+                                            // Reset all buttons to default style
+                                            document.querySelectorAll('.jspsych-custom-btn').forEach(b => {
+                                                b.style.backgroundColor = '#f0f0f0';
+                                                b.style.color = '#000000';
+                                            });
+                                        });
+                                        
+                                        return; // Don't proceed with the trial
+                                    }
+                                    
                                     // End trial and pass the selected value
                                     jsPsych.finishTrial({
                                         rt: performance.now(),
@@ -528,6 +618,95 @@
                                     // Check if this is an attention check question
                                     const isCorrect = question.is_attention_check ? 
                                         (selectedChoice + 1 === question.correct_answer) : null;
+                                    
+                                    // If attention check failed, show warning and don't proceed
+                                    if (question.is_attention_check && !isCorrect) {
+                                        // Create attention check warning popup
+                                        const warningOverlay = document.createElement('div');
+                                        warningOverlay.id = 'attention-warning-overlay';
+                                        warningOverlay.style.cssText = `
+                                            position: fixed;
+                                            top: 0;
+                                            left: 0;
+                                            width: 100%;
+                                            height: 100%;
+                                            background-color: rgba(0, 0, 0, 0.7);
+                                            display: flex;
+                                            justify-content: center;
+                                            align-items: center;
+                                            z-index: 10000;
+                                            font-family: Arial, sans-serif;
+                                        `;
+                                        
+                                        const messageBox = document.createElement('div');
+                                        messageBox.style.cssText = `
+                                            background-color: white;
+                                            padding: 30px;
+                                            border-radius: 10px;
+                                            text-align: center;
+                                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                                            max-width: 500px;
+                                        `;
+                                        
+                                        const title = document.createElement('h2');
+                                        title.textContent = 'Attention Check Failed';
+                                        title.style.cssText = `
+                                            color: #f44336;
+                                            margin-bottom: 20px;
+                                            font-size: 24px;
+                                        `;
+                                        
+                                        const message = document.createElement('p');
+                                        message.textContent = 'We detected that you may not have read the question carefully. Please re-answer this question and read all options carefully.';
+                                        message.style.cssText = `
+                                            color: #333;
+                                            font-size: 16px;
+                                            margin-bottom: 20px;
+                                            line-height: 1.5;
+                                        `;
+                                        
+                                        const button = document.createElement('button');
+                                        button.textContent = 'I Understand';
+                                        button.className = 'baba-button';
+                                        button.style.cssText = `
+                                            background-color: #4CAF50;
+                                            border: none;
+                                            color: white;
+                                            padding: 10px 20px;
+                                            text-align: center;
+                                            text-decoration: none;
+                                            display: inline-block;
+                                            font-size: 16px;
+                                            margin: 10px 2px;
+                                            cursor: pointer;
+                                            border-radius: 5px;
+                                        `;
+                                        
+                                        messageBox.appendChild(title);
+                                        messageBox.appendChild(message);
+                                        messageBox.appendChild(button);
+                                        warningOverlay.appendChild(messageBox);
+                                        document.body.appendChild(warningOverlay);
+                                        
+                                        // Click button to close warning and reset
+                                        button.addEventListener('click', () => {
+                                            warningOverlay.remove();
+                                            // Reset the selection
+                                            selectedChoice = null;
+                                            confirmBtn.disabled = true;
+                                            confirmBtn.style.backgroundColor = '#888888';
+                                            confirmBtn.style.cursor = 'not-allowed';
+                                            selectionText.textContent = '';
+                                            
+                                            // Reset all buttons to default style
+                                            document.querySelectorAll('.jspsych-custom-btn').forEach(b => {
+                                                b.style.backgroundColor = '#f0f0f0';
+                                                b.style.color = '#000000';
+                                            });
+                                        });
+                                        
+                                        return; // Don't proceed with the trial
+                                    }
                                     
                                     // End trial and pass the selected value
                                     jsPsych.finishTrial({

@@ -156,7 +156,7 @@ const EXPERIMENTAL_CONDITIONS = {
         "low-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            feeling_property: "FEELING"  // Use non-intuitive FEELING instead of IF
+            if_property: "FEELING"  // Use non-intuitive FEELING instead of IF
         }
     }
 };

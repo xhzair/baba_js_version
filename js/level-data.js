@@ -567,15 +567,7 @@ function generateLevel(templateId, conditionType = 'high-prior') {
             newElement.properties[index] = objMapping.destruct_property.toLowerCase();
         }
         
-        // 为journey_grammar关卡特殊处理语法属性
-        if (templateId === 'journey_grammar') {
-            // 根据条件类型选择使用IF或FEELING
-            if (conditionType === 'high-prior' && newElement.type === 'TEXT_${if_property}') {
-                newElement.type = 'TEXT_IF';
-            } else if (conditionType === 'low-prior' && newElement.type === 'TEXT_${if_property}') {
-                newElement.type = 'TEXT_FEELING';
-            }
-        }
+
         
         return newElement;
     });

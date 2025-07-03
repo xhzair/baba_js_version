@@ -17,6 +17,21 @@ var jsPsychAUT = (function(){
                 type:'string',
                 default:''
             }
+        },
+        data: {
+            participant_id: {
+                type: 'string',
+                description: 'Participant identifier'
+            },
+            responses: {
+                type: 'array',
+                description: 'Array of responses for each object'
+            },
+            task: {
+                type: 'string',
+                description: 'Task identifier',
+                default: 'aut'
+            }
         }
     };
 
@@ -160,7 +175,13 @@ var jsPsychAUT = (function(){
                 this.finish();
             }
         }
-        finish(){this.jsPsych.finishTrial({participant_id:this.participant,responses:this.responses});
+        finish(){
+            const trialData = {
+                participant_id: this.participant,
+                responses: this.responses,
+                task: 'aut'
+            };
+            this.jsPsych.finishTrial(trialData);
             if(this._resolve) this._resolve();
         }
         // 过渡页：提示即将呈现下一物体

@@ -16,6 +16,10 @@ var jsPsychQuestionnaire = (function(){
     class QPlugin {
         constructor(jsPsych){ this.jsPsych = jsPsych; }
 
+        static {
+            this.info = info;
+        }
+
         async trial(display_element, trial){
             this.participant = trial.participant_id;
             this.jsonPath = trial.json_path;
@@ -77,6 +81,12 @@ var jsPsychQuestionnaire = (function(){
             const nextBtn = el.querySelector('#q-next');
             let answerValue = null;
             let answerText = '';
+            
+            // Store references for attention check reset
+            this.currentAnswerValue = answerValue;
+            this.currentAnswerText = answerText;
+            this.currentOptionsDiv = optionsDiv;
+            this.currentNextBtn = nextBtn;
 
             if(q.type === 'likert' || q.type === 'option'){
                 // radio list
@@ -90,9 +100,9 @@ var jsPsychQuestionnaire = (function(){
                 });
                 optionsDiv.addEventListener('change', (ev)=>{
                     if(ev.target && ev.target.name === 'opt'){
-                        answerValue = ev.target.value;
-                        answerText = q.options.find(o=>o.value == answerValue).text;
-                        nextBtn.disabled = false;
+                        this.currentAnswerValue = ev.target.value;
+                        this.currentAnswerText = q.options.find(o=>o.value == ev.target.value).text;
+                        this.currentNextBtn.disabled = false;
                     }
                 });
             } else if(q.type === 'text'){
@@ -105,23 +115,33 @@ var jsPsychQuestionnaire = (function(){
                 input.placeholder = 'Please enter here';
                 optionsDiv.appendChild(input);
                 input.addEventListener('input', ()=>{
-                    answerText = input.value.trim();
-                    nextBtn.disabled = answerText.length === 0;
+                    this.currentAnswerText = input.value.trim();
+                    this.currentNextBtn.disabled = input.value.trim().length === 0;
                 });
             }
 
             nextBtn.addEventListener('click', ()=>{
+                // Debug information for attention check
+                console.log('Attention check debug:', {
+                    question_id: q.id,
+                    is_attention_check: q.is_attention_check,
+                    currentAnswerValue: this.currentAnswerValue,
+                    correct_answer: q.correct_answer,
+                    comparison: Number(this.currentAnswerValue) !== q.correct_answer
+                });
+                
                 // store answer
                 this.responses.push({
                     id: q.id,
                     source: q.source,
                     type: q.type,
                     question: q.question,
-                    answer_value: answerValue !== null ? Number(answerValue) : null,
-                    answer_text: answerText,
+                    answer_value: this.currentAnswerValue !== null ? Number(this.currentAnswerValue) : null,
+                    answer_text: this.currentAnswerText,
                 });
 
-                if (q.is_attention_check && answerValue !== q.correct_answer) {
+                if (q.is_attention_check && Number(this.currentAnswerValue) !== q.correct_answer) {
+                    console.log('Attention check failed - showing warning');
                     this.showAttentionWarning();
                     // prevent entering next question, until the participant re-selects
                     return;
@@ -210,6 +230,16 @@ var jsPsychQuestionnaire = (function(){
             // click button to close warning
             button.addEventListener('click', () => {
                 warningOverlay.remove();
+                // Reset the answer state so user can re-select
+                this.currentAnswerValue = null;
+                this.currentAnswerText = '';
+                this.currentNextBtn.disabled = true;
+                
+                // Clear any selected radio buttons
+                const radioButtons = this.currentOptionsDiv.querySelectorAll('input[type="radio"]');
+                radioButtons.forEach(radio => {
+                    radio.checked = false;
+                });
             });
             
             // record attention check failure
@@ -241,6 +271,5 @@ var jsPsychQuestionnaire = (function(){
         }
     }
 
-    QPlugin.info = info;
     return QPlugin;
 })(); 
