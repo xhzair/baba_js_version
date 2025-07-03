@@ -78,6 +78,26 @@ var jsPsychBabaGame = (function () {
             operation_count: {
                 type: jsPsychModule.ParameterType.INT,
                 description: 'Total number of game operations performed'
+            },
+            average_time_between_moves_ms: {
+                type: jsPsychModule.ParameterType.FLOAT,
+                description: 'Average time between moves in milliseconds'
+            },
+            move_timestamps: {
+                type: jsPsychModule.ParameterType.OBJECT,
+                description: 'Array of move timestamps with detailed timing information'
+            },
+            operation_analyses: {
+                type: jsPsychModule.ParameterType.OBJECT,
+                description: 'Array of detailed operation analyses'
+            },
+            rule_operation_stats: {
+                type: jsPsychModule.ParameterType.OBJECT,
+                description: 'Statistics of rule operations during the game'
+            },
+            final_state: {
+                type: jsPsychModule.ParameterType.OBJECT,
+                description: 'Final state of the game including objects and rules'
             }
         }
     };
@@ -558,6 +578,20 @@ var jsPsychBabaGame = (function () {
             // clean up event listeners
             document.removeEventListener('keydown', this.keyHandler);
             
+            // collect detailed data from game engine
+            const detailedData = this.gameEngine.getDetailedData();
+            
+            // Calculate average time between moves
+            let averageTimeBetweenMoves = 0;
+            if (detailedData.move_timestamps.length > 1) {
+                const moveIntervals = detailedData.move_timestamps
+                    .filter(timestamp => !timestamp.is_meta_operation)
+                    .map(timestamp => timestamp.time_since_last_move_ms);
+                if (moveIntervals.length > 0) {
+                    averageTimeBetweenMoves = moveIntervals.reduce((sum, interval) => sum + interval, 0) / moveIntervals.length;
+                }
+            }
+            
             // collect data
             const trial_data = {
                 level_id: this.currentTrial?.level_data?.level_id || 'unknown',
@@ -570,7 +604,13 @@ var jsPsychBabaGame = (function () {
                 undo_count: this.undoCount,
                 pause_count: this.pauseCount,
                 remaining_time: this.gameEngine.getRemainingTime(),
-                operation_count: this.gameEngine.operationCount || 0
+                operation_count: this.gameEngine.operationCount || 0,
+                average_time_between_moves_ms: averageTimeBetweenMoves,
+                // Detailed process data
+                move_timestamps: detailedData.move_timestamps,
+                operation_analyses: detailedData.operation_analyses,
+                rule_operation_stats: detailedData.rule_operation_stats,
+                final_state: detailedData.final_state
             };
             
             // show completion message
