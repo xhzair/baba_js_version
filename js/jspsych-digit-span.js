@@ -1,6 +1,6 @@
 /**
  * jsPsych v8 Digit Span Plugin
- * 支持正序/倒序数字广度测试，兼容jsPsych 8.x
+ * Support forward/backward digit span test, compatible with jsPsych 8.x
  */
 
 var jsPsychDigitSpan = (function() {
@@ -35,12 +35,12 @@ var jsPsychDigitSpan = (function() {
         }
 
         async trial(display_element, trial) {
-            // 保存jsPsych实例的引用
+            // save jsPsych instance reference
             const jsPsychInstance = this.jsPsych;
             
-            // 返回Promise以确保任务正确结束
+            // return Promise to ensure task ends correctly
             return new Promise(async (resolve) => {
-                // 状态变量
+                // state variables
                 let currentLength = trial.starting_length;
                 let totalTrialsCompleted = 0;
                 let consecutiveErrors = 0;
@@ -54,9 +54,8 @@ var jsPsychDigitSpan = (function() {
                 let keyHandler = null;
                 let audioCache = {};
 
-            // 加载音频
+            // load audio
             async function loadAudio() {
-                console.log('Loading audio files...');
                 for (let i = 0; i <= 9; i++) {
                     const audio = new Audio(`audio/digit_${i}.wav`);
                     audio.preload = 'auto';
@@ -69,7 +68,6 @@ var jsPsychDigitSpan = (function() {
                     });
                     audioCache[i] = audio;
                 }
-                console.log('Audio loading completed');
             }
 
             function generateNewSequence() {
@@ -84,7 +82,6 @@ var jsPsychDigitSpan = (function() {
             }
 
             function showInstructions() {
-                console.log(`Showing instructions for ${trial.mode} digit span`);
                 display_element.innerHTML = `
                     <div style="color:white;text-align:center;max-width:800px;margin:0 auto;padding:40px 20px;">
                         <h1 style="font-size:36px;margin-bottom:30px;">${trial.mode === 'forward' ? 'Phase 1' : 'Phase 2'}: ${trial.mode === 'forward' ? 'Forward' : 'Backward'} Digit Span</h1>
@@ -101,7 +98,6 @@ var jsPsychDigitSpan = (function() {
                     </div>
                 `;
                 document.getElementById('start-btn').onclick = () => {
-                    console.log('Start button clicked');
                     currentSequence = generateNewSequence();
                     showTestScreen();
                 };
@@ -147,7 +143,6 @@ var jsPsychDigitSpan = (function() {
                         await wait(trial.digit_duration * 1000);
                     }
                 } else {
-                    console.log(`Playing digit ${digit} (no audio)`);
                     await wait(trial.digit_duration * 1000);
                 }
             }
@@ -253,8 +248,6 @@ var jsPsychDigitSpan = (function() {
                 results.reaction_times.push(reactionTime);
                 totalTrialsCompleted++;
                 
-                console.log(`Trial ${totalTrialsCompleted}: length=${currentLength}, correct=${correct}, consecutive_errors=${consecutiveErrors}`);
-                
                 if (shouldEndTask(correct)) {
                     finishTest();
                     return;
@@ -300,16 +293,13 @@ var jsPsychDigitSpan = (function() {
                     all_results: results
                 };
                 
-                console.log('Digit span test finished:', trialData);
                 jsPsychInstance.finishTrial(trialData);
-                resolve(); // 解析Promise
+                resolve(); // resolve Promise
             }
 
-            // 主流程
-            console.log(`Starting digit span test (${trial.mode})`);
+            // main flow
             try {
                 await loadAudio();
-                console.log('Audio loaded successfully');
             } catch (error) {
                 console.warn('Audio loading failed, continuing without audio:', error);
             }

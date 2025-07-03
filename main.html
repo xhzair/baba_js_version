@@ -184,7 +184,7 @@
                 `;
                 document.body.appendChild(overlay);
 
-                // 3 秒倒计时后尝试关闭窗口；若关闭失败则刷新页面
+                // try to close window after 3 seconds; if failed, refresh page
                 let remaining = 3;
                 const timer = setInterval(() => {
                     remaining--;
@@ -194,7 +194,7 @@
                         clearInterval(timer);
                         try {
                             window.close();
-                            // 如果浏览器阻止关闭，则刷新到空白页
+                            // if browser prevents closing, refresh to blank page
                             setTimeout(() => location.href = 'about:blank', 100);
                         } catch (e) {
                             location.href = 'about:blank';

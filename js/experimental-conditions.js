@@ -1,14 +1,14 @@
 /**
- * Baba is You - 实验条件定义文件
+ * Baba is You - Experimental Conditions Definition File
  * 
- * 本文件定义了实验中使用的不同条件，特别是操控游戏元素与玩家日常生活经验的匹配程度：
- * - high-prior: 游戏元素与现实生活经验高度相关
- * - low-prior: 游戏元素与现实生活经验相关度较低
+ * This file defines different conditions used in the experiment, especially the match between game elements and players' daily life experience:
+ * - high-prior: Game elements are highly related to real life experience
+ * - low-prior: Game elements are less related to real life experience
  */
 
 const EXPERIMENTAL_CONDITIONS = {
     /**
-     * 默认条件映射
+     * Default Condition Mapping
      */
     default: {
         you_obj: "PUMPKIN",
@@ -28,179 +28,179 @@ const EXPERIMENTAL_CONDITIONS = {
     /**
      * Journey: Grass Yard (journey_environment)
      * 
-     * 核心互动: 理解环境中障碍物的阻挡作用，找到通向目标的路径
-     * 关键元素: 围成封闭空间的对象 (POOL 或 BALLOON)
+     * Core Interaction: Understand the blocking effect of obstacles in the environment, find the path to the target
+     * Key Element: Objects forming a closed space (POOL or BALLOON)
      */
     journey_environment: {
-        // 与先验经验高度相关的设置 - 使用水池围成封闭空间
+        // High-prior setting - Use pool to form a closed space
         "high-prior": {
-            you_obj: "PUMPKIN",   // 可控制对象
-            win_obj: "SUN",       // 胜利目标
-            stop_obj: "DICE",     // 这里stop_obj用于障碍物，而不是围成封闭空间的元素
-            boundary_obj: "POOL"  // 使用水池围成封闭空间，更符合不可穿越的直觉
+            you_obj: "PUMPKIN",   // Controllable object
+            win_obj: "SUN",       // Victory target
+            stop_obj: "DICE",     // Here stop_obj is used for obstacles, not for forming a closed space
+            boundary_obj: "POOL"  // Use pool to form a closed space, more in line with the intuition of being uncrossable
         },
-        // 与先验经验相关度较低的设置 - 使用气球围成封闭空间
+        // Low-prior setting - Use balloon to form a closed space
         "low-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
             stop_obj: "DICE",     
-            boundary_obj: "BALLOON" // 气球作为围栏与先验经验相关度较低
+            boundary_obj: "BALLOON" // Balloon as a fence, less related to prior experience
         }
     },
 
     /**
      * Journey: Bridge Building (journey_understandproperty)
      * 
-     * 核心互动: 理解DESTRUCT/IMPACT属性的交互，构建通路
-     * 关键属性: DESTRUCT/IMPACT（接触消失）
+     * Core Interaction: Understand the interaction of DESTRUCT/IMPACT attributes, build a path
+     * Key Attribute: DESTRUCT/IMPACT (contact disappears)
      */
     journey_understandproperty: {
-        // 与先验经验高度相关的设置
+        // High-prior setting
         "high-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            push_obj: "DICE",      // 骰子可以推动符合直觉
-            destruct_obj: "BOMB",  // 炸弹会破坏接触到的物体符合直觉
-            destruct_property: "DESTRUCT" // 属性名：炸弹破坏物体
+            push_obj: "DICE",      // Dice can be pushed, in line with intuition
+            destruct_obj: "BOMB",  // Bomb will destroy the object it contacts, in line with intuition
+            destruct_property: "DESTRUCT" // Attribute name: Bomb destroys object
         },
-        // 与先验经验相关度较低的设置
+        // Low-prior setting
         "low-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            push_obj: "DICE",      // 骰子可以推动符合直觉
-            destruct_obj: "BOMB",  // 保持炸弹作为对象
-            destruct_property: "IMPACT" // 属性名：炸弹"撞击"物体与先验经验相关度较低
+            push_obj: "DICE",      // Dice can be pushed, in line with intuition
+            destruct_obj: "BOMB",  // Keep the bomb as an object
+            destruct_property: "IMPACT" // property name: bomb "impact" object, less related to prior experience
         }
     },
 
     /**
      * Journey: Locked In (journey_switchidentity)
      * 
-     * 核心互动: 需要变换物体身份
+     * Core Interaction: Need to switch object identity
      */
     journey_switchidentity: {
-        // 与先验经验高度相关的设置
+        // High-prior setting
         "high-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            shut_obj: "CHAIN",    // 链条有锁住功能符合直觉
-            red_obj: "ANCHOR",    // 锚与链条在现实中有很强关联，常常一起使用
+            shut_obj: "CHAIN",    // Chain has locking function, in line with intuition
+            red_obj: "ANCHOR",    // Anchor and chain are strongly associated in reality, often used together
         },
-        // 与先验经验相关度较低的设置
+        // Low-prior setting
         "low-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            shut_obj: "CHAIN",    // 保持锁住功能
-            red_obj: "FAN",       // 风扇与链条关联性较低，不易建立概念联系
+            shut_obj: "CHAIN",    // Keep locking function
+            red_obj: "FAN",       // Fan is less related to the concept of locking, difficult to establish a concept connection
         }
     },
 
     /**
      * Journey: Combination (journey_combination)
      * 
-     * 核心互动: 理解SHUT和OPEN属性的组合使用
-     * 关键属性: SHUT（锁住）, OPEN（开启）
+     * Core Interaction: Understand the combination use of SHUT and OPEN attributes
+     * Key Attribute: SHUT (lock), OPEN (open)
      */
     journey_combination: {
-        // 与先验经验高度相关的设置
+        // High-prior setting
         "high-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            shut_obj: "DOOR",    // 门可以锁住符合直觉
-            open_obj: "KEY",     // 钥匙可以开门符合直觉
+            shut_obj: "DOOR",    // Door can lock, in line with intuition
+            open_obj: "KEY",     // Key can open door, in line with intuition
         },
-        // 与先验经验相关度较低的设置
+        // Low-prior setting
         "low-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            shut_obj: "TREE",    // 树不是用来锁住的
-            open_obj: "ROSE",    // 玫瑰不能开启事物
+            shut_obj: "TREE",    // Tree is not used for locking
+            open_obj: "ROSE",    // Rose cannot open things
         }
     },
 
     /**
      * Journey: Breaking Rules (journey_break)
      * 
-     * 核心互动: 理解如何通过操作规则文本来改变游戏规则
-     * 关键属性: 变动规则
+     * Core Interaction: Understand how to change game rules by manipulating text rules
+     * Key Attribute: Change rules
      */
     journey_break: {
-        // 与先验经验高度相关的设置
+        // High-prior setting
         "high-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            defeat_obj: "BOMB",   // 炸弹会击败你符合直觉
+            defeat_obj: "BOMB",   // Bomb will defeat you, in line with intuition
         },
-        // 与先验经验相关度较低的设置
+        // Low-prior setting
         "low-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            defeat_obj: "CANDLE",  // 蜡烛击败你与先验经验相关度较低
+            defeat_obj: "CANDLE",  // Candle defeats you, less related to prior experience
         }
     },
 
     /**
      * Journey: Grammar Rules (journey_grammar)
      * 
-     * 核心互动: 理解游戏的语法规则，组合不同的语句
-     * 关键属性: 多种规则组合
+     * Core Interaction: Understand the grammar rules of the game, combine different sentences
+     * Key Attribute: Multiple rule combinations
      */
     journey_grammar: {
-        // 与先验经验高度相关的设置
+        // High-prior setting
         "high-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            if_property: "IF"     // 使用常见的条件语句IF
+            if_property: "IF"     // Use common IF statement
         },
-        // 与先验经验相关度较低的设置
+        // Low-prior setting
         "low-prior": {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
-            feeling_property: "FEELING"  // 使用不直观的FEELING替代IF
+            feeling_property: "FEELING"  // Use non-intuitive FEELING instead of IF
         }
     }
 };
 
 /**
- * 获取指定关卡和条件的对象映射
- * @param {string} levelId - 关卡ID
- * @param {string} conditionType - 条件类型 ('high-prior'或'low-prior')
- * @returns {Object} 对象映射
+ * Get Object Mapping for a Specific Level and Condition
+ * @param {string} levelId - Level ID
+ * @param {string} conditionType - Condition type ('high-prior' or 'low-prior')
+ * @returns {Object} Object mapping
  */
 function getExperimentalCondition(levelId, conditionType = 'high-prior') {
-    // 提取关卡基本ID（移除journey_前缀）
+    // Extract basic ID of the level (remove journey_ prefix)
     const baseId = levelId.startsWith('journey_') ? levelId : null;
     
-    // 如果找到关卡特定条件配置
+    // If specific level condition configuration is found
     if (baseId && EXPERIMENTAL_CONDITIONS[baseId] && EXPERIMENTAL_CONDITIONS[baseId][conditionType]) {
-        // 合并默认条件和特定条件
+        // Merge default condition and specific condition
         return {
             ...EXPERIMENTAL_CONDITIONS.default,
             ...EXPERIMENTAL_CONDITIONS[baseId][conditionType]
         };
     }
     
-    // 如果没有找到特定配置，返回默认配置
+    // If no specific configuration is found, return default configuration
     return EXPERIMENTAL_CONDITIONS.default;
 }
 
 /**
- * 获取可用的条件类型
- * @returns {string[]} 条件类型列表
+ * Get Available Condition Types
+ * @returns {string[]} List of condition types
  */
 function getConditionTypes() {
     return ['high-prior', 'low-prior'];
 }
 
 /**
- * 获取所有关卡的条件设置
- * @returns {Object} 包含所有关卡条件的对象
+ * Get Condition Settings for All Levels
+ * @returns {Object} Object containing conditions for all levels
  */
 function getAllConditions() {
     return EXPERIMENTAL_CONDITIONS;
 }
 
-// 导出函数和条件
+// Export functions and conditions
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         EXPERIMENTAL_CONDITIONS,

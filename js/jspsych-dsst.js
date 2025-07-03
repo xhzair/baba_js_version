@@ -49,7 +49,7 @@ var jsPsychDSST = (function () {
         }
 
         async trial(display_element, trial) {
-            // 保存jsPsych实例的引用到类属性
+            // save jsPsych instance reference to class property
             this.jsPsychInstance = this.jsPsych;
             
             // Promise wrapper to signal completion
@@ -78,7 +78,6 @@ var jsPsychDSST = (function () {
                 this.timerInterval = null;
                 this.startTime = null;
 
-                console.log('Starting DSST task');
                 // begin
                 this.showNext(display_element, trial);
             });
@@ -281,7 +280,6 @@ var jsPsychDSST = (function () {
                     correct_flags: this.correctFlags,
                     reaction_times: this.reactionTimes
                 };
-                console.log('DSST task finished:', data);
                 this.jsPsychInstance.finishTrial(data);
                 if (this._resolver) this._resolver();
             });

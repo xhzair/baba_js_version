@@ -26,7 +26,7 @@ var jsPsychQuestionnaire = (function(){
 
             // load items if not provided
             if(!this.items){
-                // 先尝试从内嵌 <script id="questionnaire-data" type="application/json"> 标签读取
+                // try to read from embedded <script id="questionnaire-data" type="application/json"> tag
                 const embedTag = document.getElementById('questionnaire-data');
                 if(embedTag){
                     try{
@@ -36,7 +36,7 @@ var jsPsychQuestionnaire = (function(){
                     }
                 }
 
-                // 如果仍未获取，尝�?fetch
+                // if still not obtained, try fetch
                 if(!this.items){
                     try{
                         const resp = await fetch(this.jsonPath);
@@ -123,7 +123,7 @@ var jsPsychQuestionnaire = (function(){
 
                 if (q.is_attention_check && answerValue !== q.correct_answer) {
                     this.showAttentionWarning();
-                    // 阻止进入下一题，直到被试重新选择
+                    // prevent entering next question, until the participant re-selects
                     return;
                 }
 
@@ -140,7 +140,7 @@ var jsPsychQuestionnaire = (function(){
             // Implementation of showAttentionWarning method
             console.warn('Attention check failed. Please re-answer the question.');
             
-            // 添加注意力检查警告弹�?
+            // add attention check warning popup
             const warningOverlay = document.createElement('div');
             warningOverlay.id = 'attention-warning-overlay';
             warningOverlay.style.cssText = `
@@ -168,7 +168,7 @@ var jsPsychQuestionnaire = (function(){
             `;
             
             const title = document.createElement('h2');
-            title.textContent = '注意力检查未通过';
+            title.textContent = 'Attention Check Failed';
             title.style.cssText = `
                 color: #f44336;
                 margin-bottom: 20px;
@@ -176,7 +176,7 @@ var jsPsychQuestionnaire = (function(){
             `;
             
             const message = document.createElement('p');
-            message.textContent = '我们检测到您可能没有仔细阅读问题。请重新回答此问题，并仔细阅读所有选项�?;
+            message.textContent = 'We detected that you may not have read the question carefully. Please re-answer this question and read all options carefully.';
             message.style.cssText = `
                 color: #333;
                 font-size: 16px;
@@ -185,7 +185,7 @@ var jsPsychQuestionnaire = (function(){
             `;
             
             const button = document.createElement('button');
-            button.textContent = '我明白了';
+            button.textContent = 'I Understand';
             button.className = 'baba-button';
             button.style.cssText = `
                 background-color: #4CAF50;
@@ -207,12 +207,12 @@ var jsPsychQuestionnaire = (function(){
             warningOverlay.appendChild(messageBox);
             document.body.appendChild(warningOverlay);
             
-            // 点击按钮关闭警告
+            // click button to close warning
             button.addEventListener('click', () => {
                 warningOverlay.remove();
             });
             
-            // 记录注意力检查失�?
+            // record attention check failure
             if (!this.attentionCheckFailures) {
                 this.attentionCheckFailures = [];
             }
@@ -226,7 +226,7 @@ var jsPsychQuestionnaire = (function(){
         }
 
         finish(){
-            // 添加注意力检查结果到数据
+            // add attention check results to data
             const attentionCheckData = {
                 attention_checks_count: this.items.filter(item => item.is_attention_check).length,
                 attention_check_failures: this.attentionCheckFailures || []

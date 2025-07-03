@@ -82,13 +82,13 @@ class BabaGameEngine {
         this.pauseTime = 0;
         this.totalPauseTime = 0;
         
-        // 初始化缺失的变量
+        // initialize missing variables
         this.savedStates = [];
         this.grid = [];
         this.playerPosition = null;
         this.levelId = levelData.level_id || 'unknown';
         
-        // 最近移动的对象追踪
+        // track recently moved objects
         this.recentlyMovedObjects = new Set();
         
         this.initializeObjects(levelData.elements);
@@ -157,7 +157,7 @@ class BabaGameEngine {
             obj.isStop = false;
             obj.isPush = false;
             obj.isDefeat = false;
-            // 重要：重置isRed但保留permanentRed
+            // important: reset isRed but keep permanentRed
             if (!obj.permanentRed) {
                 obj.isRed = false;
             }
@@ -242,7 +242,7 @@ class BabaGameEngine {
                 break;
             case 'IMPACT':
                 obj.isImpact = true;
-                obj.isDestruct = true;  // IMPACT具有与DESTRUCT相同的功能
+                obj.isDestruct = true;  // IMPACT has the same function as DESTRUCT
                 break;
             case 'SHUT':
                 obj.isShut = true;
@@ -409,7 +409,7 @@ class BabaGameEngine {
                 chainObj.position[0] + direction[0],
                 chainObj.position[1] + direction[1]
             ];
-            // 标记为最近移动的对象
+            // Mark as recently moved object
             this.recentlyMovedObjects.add(chainObj);
         }
         
@@ -489,7 +489,7 @@ class BabaGameEngine {
         
         this.saveState();
         
-        // 清除之前的最近移动对象追踪
+        // Clear previous recently moved object tracking
         this.recentlyMovedObjects.clear();
         
         // Find YOU objects
@@ -508,14 +508,14 @@ class BabaGameEngine {
         }
         
         if (anyMoved) {
-            // 先解析规则和更新属性
-            this.parseRulesFromBoard(); // 这里已经包含了updateObjectProperties()调用
+            // First parse rules and update properties
+            this.parseRulesFromBoard(); // This already includes the call to updateObjectProperties()
             
-            // 立即处理DESTRUCT和碰撞（在属性更新后，标记处理前）
+            // Immediately handle DESTRUCT and collision (after property update, before marking handled)
             this.processDestruct();
             this.processOpenShutCollision();
             
-            // 过滤掉已被删除的recently-moved对象
+            // Filter out recently-moved objects that have been deleted
             const validRecentlyMoved = new Set();
             for (const obj of this.recentlyMovedObjects) {
                 if (this.objects.includes(obj)) {
@@ -524,10 +524,8 @@ class BabaGameEngine {
             }
             this.recentlyMovedObjects = validRecentlyMoved;
             
-            // 延迟清除recently-moved标记，确保UI渲染完成
-            setTimeout(() => {
-                this.recentlyMovedObjects.clear();
-            }, 100);
+            // Clear previous recently moved object tracking
+            this.recentlyMovedObjects.clear();
             
             if (this.checkDefeat()) {
                 this.dead = true;
@@ -544,13 +542,13 @@ class BabaGameEngine {
     
     processDestruct() {
         /**
-        * 处理DESTRUCT/IMPACT交互：
-        * 如果某个位置有destruct或impact对象且该位置还有其他对象，
-        * 则移除该位置的所有对象（包括destruct/impact对象和其他对象）
+        * Handle DESTRUCT/IMPACT interaction:
+        * If a position has destruct or impact object and that position still has other objects,
+        * then remove all objects at that position (including destruct/impact object and other objects)
          */
         const objectsByPosition = {};
         
-        // 首先按位置分组对象
+        // First group objects by position
         for (const obj of this.objects) {
             const key = `${obj.position[0]},${obj.position[1]}`;
             if (!objectsByPosition[key]) {
@@ -562,24 +560,24 @@ class BabaGameEngine {
             });
         }
         
-        // 找出要移除的对象
+        // Find objects to remove
         const toRemove = [];
         
         for (const key in objectsByPosition) {
             const objGroup = objectsByPosition[key];
             
-            // 分离destruct/impact对象和其他对象
+            // Separate destruct/impact objects and other objects
             const destructObjects = objGroup.filter(item => item.obj.isDestruct || item.obj.isImpact);
             const nonDestructObjects = objGroup.filter(item => !item.obj.isDestruct && !item.obj.isImpact);
             
-            // 如果该位置既有destruct/impact对象，又有其他对象
+            // If the position has both destruct/impact objects and other objects
             if (destructObjects.length > 0 && nonDestructObjects.length > 0) {
-                // 将所有对象标记为删除
+                // Mark all objects for removal
                 objGroup.forEach(item => toRemove.push(item.index));
             }
         }
         
-        // 从高索引到低索引移除，以避免索引变化问题
+        // Remove objects from high index to low index to avoid index issues
         toRemove.sort((a, b) => b - a).forEach(index => {
             this.objects.splice(index, 1);
         });
@@ -649,14 +647,14 @@ class BabaGameEngine {
     }
     
     saveState() {
-        // 保存当前游戏状态
+        // Save current game state
         this.savedStates.push({
             objects: JSON.parse(JSON.stringify(this.objects)),
             rules: JSON.parse(JSON.stringify(this.rules)),
             playerPosition: this.playerPosition ? {...this.playerPosition} : null
         });
         
-        // 添加完整的游戏状态分析
+        // Add complete game state analysis
         this.operationState = {
             objects: this.extractObjectsState(),
             current_rules: this.extractRulesState(),
@@ -672,7 +670,7 @@ class BabaGameEngine {
     }
     
     extractObjectsState() {
-        // 提取所有游戏对象的状态
+        // Extract all game object states
         const objects = [];
         for (const obj of this.objects) {
             objects.push({
@@ -686,24 +684,24 @@ class BabaGameEngine {
     }
     
     extractRulesState() {
-        // 提取当前所有规则
+        // Extract current all rules
         return this.rules.map(rule => [rule.subject, rule.verb, rule.predicate]);
     }
     
     getObjectProperties(obj) {
-        // 获取对象的所有属性
+        // Get all object properties
         const properties = [];
         if (obj.isYou) properties.push("YOU");
         if (obj.isStop) properties.push("STOP");
         if (obj.isPush) properties.push("PUSH");
         if (obj.isWin) properties.push("WIN");
         if (obj.isDefeat) properties.push("DEFEAT");
-        // 添加更多可能的属性
+        // Add more possible properties
         return properties;
     }
     
     checkForObjectOverlaps() {
-        // 检查是否有对象重叠
+        // Check if there are object overlaps
         const positionMap = {};
         for (const obj of this.objects) {
             const key = `${obj.position[0]},${obj.position[1]}`;
@@ -713,7 +711,7 @@ class BabaGameEngine {
             positionMap[key].push(obj);
         }
         
-        // 检查是否有位置包含多个对象
+        // Check if there are positions containing multiple objects
         for (const key in positionMap) {
             if (positionMap[key].length > 2) {
                 return true;
@@ -723,21 +721,21 @@ class BabaGameEngine {
     }
     
     hasPlayerControl() {
-        // 检查玩家是否有控制权
+        // Check if player has control
         return Boolean(this.playerPosition);
     }
     
     logMove(direction, success) {
-        // 记录移动操作
+        // Record move operation
         const lastState = this.operationState ? JSON.parse(JSON.stringify(this.operationState)) : null;
         
-        // 保存当前状态
+        // Save current state
         this.saveState();
         
-        // 如果是第一次移动，没有上一个状态
+        // If it's the first move, there's no previous state
         if (!lastState) return;
         
-        // 分析移动的对象
+        // Analyze moved objects
         let movedObjects = [];
         if (success && this.playerPosition) {
             const px = this.playerPosition.x;
@@ -745,14 +743,14 @@ class BabaGameEngine {
             const tx = px + direction.x;
             const ty = py + direction.y;
             
-            // 查找被推动的对象
+            // Find pushed objects
             movedObjects = this.findMovedObjects(px, py, direction);
         }
         
-        // 分析规则变化
+        // Analyze rule changes
         const ruleEffect = this.analyzeRuleChanges(lastState.current_rules, this.operationState.current_rules);
         
-        // 创建操作分析
+        // Create operation analysis
         const operationType = this.classifyOperationType(movedObjects);
         const operationAnalysis = {
             content_type: operationType,
@@ -764,20 +762,20 @@ class BabaGameEngine {
             rules_affected: ruleEffect
         };
         
-        // 存储操作分析
+        // Store operation analysis
         this.lastOperationAnalysis = operationAnalysis;
         
-        // 更新规则操作统计
+        // Update rule operation stats
         this.updateRuleOperationStats(ruleEffect);
     }
     
     findMovedObjects(playerX, playerY, direction) {
-        // 查找被玩家直接推动的对象
+        // Find objects directly pushed by player
         const movedObjects = [];
         const targetX = playerX + direction.x;
         const targetY = playerY + direction.y;
         
-        // 检查目标位置是否有对象
+        // Check if target position has objects
         const objectsAtTarget = this.objects.filter(obj => 
             obj.position[0] === targetX && obj.position[1] === targetY
         );
@@ -799,11 +797,11 @@ class BabaGameEngine {
             return { effect: "none", rules_added: [], rules_removed: [] };
         }
         
-        // 将规则数组转换为字符串便于比较
+        // Convert rule arrays to strings for comparison
         const oldRuleSet = new Set(oldRules.map(r => JSON.stringify(r)));
         const newRuleSet = new Set(newRules.map(r => JSON.stringify(r)));
         
-        // 找出添加和删除的规则
+        // Find added and removed rules
         const added = [];
         const removed = [];
         

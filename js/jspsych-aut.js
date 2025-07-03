@@ -38,26 +38,26 @@ var jsPsychAUT = (function(){
             const obj=this.objects[this.idx];
             el.innerHTML=`<div class='aut-container' style='width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;'><h2 style='color:white;'>Object: ${obj}</h2><div id='aut-timer' style='color:#ffcc00;font-size:20px;margin-top:10px;'></div><textarea id='aut-input' placeholder='Please type your ideas here. Separate them by commas.' autofocus style='width:80vw;max-width:1000px;min-width:400px;height:250px;margin-top:40px;font-size:18px;'></textarea><br><button id='aut-submit' class='baba-button' style='margin-top:20px;'>Submit</button></div>`;
             const textarea=document.getElementById('aut-input');
-            // 立即启动计时
+            // start timer immediately
             this.startTime=performance.now();
             this.timer=setInterval(()=>this.updateTimer(),100);
             
-            // 添加详细的创意时间记录
+            // add detailed creative time recording
             this.ideaTimestamps = [];
             let previousText = '';
             let lastCommaCount = 0;
             
-            // 检测新创意输入
+            // detect new creative input
             textarea.addEventListener('input', () => {
                 const currentTime = performance.now();
                 const elapsedTime = (currentTime - this.startTime)/1000;
                 const currentText = textarea.value;
                 
-                // 检查是否有新的逗号出现
+                // check if there are new commas
                 const currentCommas = (currentText.match(/,/g) || []).length;
                 
                 if (currentCommas > lastCommaCount) {
-                    // 提取最新输入的创意
+                    // extract the latest creative input
                     const ideas = currentText.split(',').map(idea => idea.trim()).filter(idea => idea);
                     const newIdea = ideas[ideas.length - 1];
                     
@@ -75,24 +75,24 @@ var jsPsychAUT = (function(){
                 previousText = currentText;
             });
             
-            // 保存引用以便后续继续显示下一个物体
+            // save reference to display next object
             this.displayEl = el;
             document.getElementById('aut-submit').onclick=()=>{this.saveAnswer(textarea.value);};
             this.updateTimer();
         }
         updateTimer(){const remain=this.timeLimit- (performance.now()-this.startTime)/1000;const t=document.getElementById('aut-timer');if(t) t.textContent=`Time left: ${Math.max(0,remain).toFixed(1)} s`;if(remain<=0){clearInterval(this.timer);this.finish();}}
         saveAnswer(txt){
-            // 保存当前答案
+            // save current answer
             clearInterval(this.timer);
             const currentTime = performance.now();
             const totalTime = (currentTime - this.startTime)/1000;
             
-            // 检查是否有尚未记录时间戳的最后一个创意
+            // check if there are any unrecorded timestamps for the last creative
             const ideas = txt.trim().split(',').map(idea => idea.trim()).filter(idea => idea);
             if (ideas.length > 0 && (this.ideaTimestamps.length === 0 || 
                 ideas[ideas.length - 1] !== this.ideaTimestamps[this.ideaTimestamps.length - 1]?.idea)) {
                 
-                // 添加最后一个创意的时间戳
+                // add timestamp for the last creative
                 this.ideaTimestamps.push({
                     idea: ideas[ideas.length - 1],
                     time: Math.min(totalTime, this.timeLimit).toFixed(3),
@@ -100,7 +100,7 @@ var jsPsychAUT = (function(){
                 });
             }
             
-            // 计算响应时间间隔
+            // calculate response time intervals
             const responseIntervals = [];
             if (this.ideaTimestamps.length > 1) {
                 for (let i = 1; i < this.ideaTimestamps.length; i++) {
@@ -110,14 +110,14 @@ var jsPsychAUT = (function(){
                 }
             }
             
-            // 分析响应模式
+            // analyze response patterns
             const averageInterval = responseIntervals.length > 0 ? 
                 responseIntervals.reduce((sum, val) => sum + val, 0) / responseIntervals.length : 0;
                 
             const maxInterval = responseIntervals.length > 0 ? 
                 Math.max(...responseIntervals) : 0;
             
-            // 标准差计算
+            // calculate standard deviation
             let stdDeviation = 0;
             if (responseIntervals.length > 1) {
                 const squaredDiffs = responseIntervals.map(val => Math.pow(val - averageInterval, 2));
@@ -125,7 +125,7 @@ var jsPsychAUT = (function(){
                 stdDeviation = Math.sqrt(variance);
             }
             
-            // 第一、中间、最后三分之一创意数量
+            // calculate the number of creative ideas in the first, middle, and last thirds
             const firstThird = Math.floor(ideas.length / 3);
             const middleThird = Math.floor(ideas.length / 3);
             const lastThird = ideas.length - firstThird - middleThird;

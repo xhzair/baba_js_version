@@ -1,6 +1,6 @@
 /**
  * jsPsych Baba is You Game Plugin
- * 核心游戏插件，处理Baba is You游戏的交互和渲染
+ * Core game plugin, handling interactions and rendering of Baba is You game
  */
 
 var jsPsychBabaGame = (function () {
@@ -101,13 +101,13 @@ var jsPsychBabaGame = (function () {
 
 
         trial(display_element, trial) {
-            // 保存trial参数
+            // save trial parameters
             this.currentTrial = trial;
 
-            // 游戏开始时禁用页面滚动
+            // disable page scrolling when game starts
             document.body.classList.add('baba-game-active');
 
-            // 初始化游戏引擎
+            // initialize game engine
             this.gameEngine = new BabaGameEngine(trial.level_data, trial.time_limit);
             this.gameCompleted = false;
             this.gameWon = false;
@@ -116,13 +116,13 @@ var jsPsychBabaGame = (function () {
             this.undoCount = 0;
             this.pauseCount = 0;
             
-            // 创建游戏界面
+            // create game interface
             this.createGameDisplay(display_element, trial);
             
-            // 设置键盘监听
+            // set keyboard listeners
             this.setupKeyboardListeners();
             
-            // 开始游戏循环
+            // start game loop
             this.gameLoop();
         }
 
@@ -144,11 +144,11 @@ var jsPsychBabaGame = (function () {
                     </div>
                     
                     <div id="game-grid-container">
-                        <!-- 游戏网格将在这里生成 -->
+                        <!-- game grid will be generated here -->
                     </div>
                     
                     <div id="game-status" style="color: white; font-size: 18px; margin-top: 20px;">
-                        <!-- 游戏状态信息 -->
+                        <!-- game status information -->
                     </div>
                 </div>
                 
@@ -170,19 +170,19 @@ var jsPsychBabaGame = (function () {
             const container = document.getElementById('game-grid-container');
             const gridSize = this.gameEngine.gridSize;
             
-            // 计算最佳单元格大小以适应屏幕
+            // calculate optimal cell size to fit screen
             const cellSize = this.calculateOptimalCellSize(gridSize);
             
-            // 创建网格元素
+            // create grid elements
             const gridElement = document.createElement('div');
             gridElement.className = 'game-grid';
             gridElement.style.gridTemplateColumns = `repeat(${gridSize[0]}, ${cellSize}px)`;
             gridElement.style.gridTemplateRows = `repeat(${gridSize[1]}, ${cellSize}px)`;
             
-            // 更新CSS变量以供其他地方使用
+            // update CSS variables for other places
             document.documentElement.style.setProperty('--cell-size', `${cellSize}px`);
             
-            // 创建所有网格单元格
+            // create all grid cells
             this.gridCells = [];
             for (let y = 0; y < gridSize[1]; y++) {
                 this.gridCells[y] = [];
@@ -203,52 +203,52 @@ var jsPsychBabaGame = (function () {
         }
         
         calculateOptimalCellSize(gridSize) {
-            // 获取可用空间
-            const availableWidth = window.innerWidth - 40; // 减去边距
-            const availableHeight = window.innerHeight - 160; // 减去UI元素高度
+            // get available space
+            const availableWidth = window.innerWidth - 40; // minus margin
+            const availableHeight = window.innerHeight - 160; // minus UI elements height
             
-            // 计算基于宽度和高度的最大单元格大小
+            // calculate max cell size based on width and height
             const maxCellSizeByWidth = Math.floor(availableWidth / gridSize[0]);
             const maxCellSizeByHeight = Math.floor(availableHeight / gridSize[1]);
             
-            // 选择较小的那个，确保整个棋盘都能显示
+            // choose the smaller one, ensure the whole grid can be displayed
             const optimalSize = Math.min(maxCellSizeByWidth, maxCellSizeByHeight);
             
-            // 设置最小和最大限制
-            const minCellSize = 30; // 最小30px，确保可读
-            const maxCellSize = 80; // 最大80px，避免过大
+            // set min and max limits
+            const minCellSize = 30; // min 30px, ensure readable
+            const maxCellSize = 80; // max 80px, avoid too large
             return Math.max(minCellSize, Math.min(maxCellSize, optimalSize));
         }
 
         updateDisplay() {
-            // 清空所有单元格
+            // clear all cells
             for (let y = 0; y < this.gameEngine.gridSize[1]; y++) {
                 for (let x = 0; x < this.gameEngine.gridSize[0]; x++) {
                     this.gridCells[y][x].innerHTML = '';
                 }
             }
             
-            // 按正确的层级顺序渲染对象
-            // 1. 首先渲染所有非文本对象（实体对象）
+            // render objects in the correct order
+            // 1. first render all non-text objects (entity objects)
             const nonTextObjects = this.gameEngine.objects.filter(obj => !obj.isText);
             for (const obj of nonTextObjects) {
                 this.renderObject(obj);
             }
             
-            // 2. 然后渲染所有文本对象（确保文字在上层）
+            // 2. then render all text objects (ensure text is on top)
             const textObjects = this.gameEngine.objects.filter(obj => obj.isText);
             for (const obj of textObjects) {
                 this.renderObject(obj);
             }
             
-            // 3. 最后重新渲染最近移动的对象，确保它们在最顶层
+            // 3. finally render recently moved objects, ensure they are on top
             for (const obj of this.gameEngine.recentlyMovedObjects) {
-                // 先移除已存在的元素（避免重复）
+                // first remove existing elements (avoid duplicates)
                 const [x, y] = obj.position;
                 if (y >= 0 && y < this.gridCells.length && 
                     x >= 0 && x < this.gridCells[y].length) {
                     const cell = this.gridCells[y][x];
-                    // 找到并移除这个对象的现有元素
+                    // find and remove existing elements of this object
                     const existingElements = Array.from(cell.children);
                     for (const elem of existingElements) {
                         const objectType = obj.type.toLowerCase().replace('text_', '');
@@ -257,12 +257,12 @@ var jsPsychBabaGame = (function () {
                             break;
                         }
                     }
-                    // 重新渲染到顶层
+                    // re-render to top layer
                     this.renderObject(obj);
                 }
             }
             
-            // 更新时间和移动计数
+            // update time and move count
             this.updateUI();
         }
 
@@ -275,49 +275,35 @@ var jsPsychBabaGame = (function () {
                 const objectElement = document.createElement('div');
                 objectElement.className = 'game-object';
                 
-                // 添加对象类型
+                // add object type
                 const objectType = obj.type.toLowerCase().replace('text_', '');
                 objectElement.classList.add(`object-${objectType}`);
                 
-                // 区分文本对象和图像对象
+                // distinguish text objects and image objects
                 if (obj.isText) {
-                    // 文本对象：使用预生成的文本图片
+                    // text object: use pre-generated text images
                     objectElement.classList.add('text-object');
                     objectElement.classList.add('text-image');
                     const textContent = obj.type.replace('TEXT_', '');
                     
-                    // 使用预生成的文本图片
+                    // use pre-generated text images
                     const imagePath = `text_images/${textContent.toLowerCase()}.png`;
-                    console.log(`尝试加载文本图片: ${imagePath}, 文本内容: ${textContent}`); // 调试日志
                     
                     objectElement.style.backgroundImage = `url('${imagePath}')`;
                     objectElement.style.backgroundSize = 'contain';
                     objectElement.style.backgroundRepeat = 'no-repeat';
                     objectElement.style.backgroundPosition = 'center';
                     objectElement.style.backgroundColor = 'transparent';
-                    objectElement.textContent = ''; // 隐藏文字，只显示图片
+                    objectElement.textContent = ''; // hide text, only show image
                     
-                    // 调试：打印元素的类名和样式
-                    console.log(`元素类名: ${objectElement.className}`);
-                    console.log(`设置的背景图片: ${objectElement.style.backgroundImage}`);
-                    
-                    // 添加错误处理，如果图片加载失败则显示文字
+                    // add error handling, if image loading fails, show text
                     const img = new Image();
                     img.onload = () => {
-                        // 图片加载成功，保持图片显示
-                        console.log(`文本图片加载成功: ${imagePath}, 图片尺寸: ${img.width}x${img.height}`);
-                        
-                        // 调试：检查计算后的样式
-                        setTimeout(() => {
-                            const computedStyle = window.getComputedStyle(objectElement);
-                            console.log(`计算后的背景图片: ${computedStyle.backgroundImage}`);
-                            console.log(`计算后的背景尺寸: ${computedStyle.backgroundSize}`);
-                            console.log(`元素尺寸: ${objectElement.offsetWidth}x${objectElement.offsetHeight}`);
-                        }, 100);
+                        // image loaded successfully, keep image displayed
                     };
                     img.onerror = () => {
-                        // 图片加载失败，回退到文字显示
-                        console.warn(`文本图片加载失败: ${imagePath}`);
+                        // image loading failed, revert to text display
+                        console.warn(`Text image loading failed: ${imagePath}`);
                         objectElement.style.backgroundImage = 'none';
                         objectElement.textContent = textContent;
                         objectElement.style.color = 'white';
@@ -326,12 +312,12 @@ var jsPsychBabaGame = (function () {
                     };
                     img.src = imagePath;
                 } else {
-                    // 实体对象：使用图片显示
+                    // entity object: use image to display
                     objectElement.classList.add('image-object');
-                    // 不添加文本内容，让图片通过CSS背景显示
+                    // do not add text content, let image display through CSS background
                 }
                 
-                // 添加属性效果
+                // add property effects
                 if (obj.isYou) objectElement.classList.add('property-you');
                 if (obj.isWin) objectElement.classList.add('property-win');
                 if (obj.isStop) objectElement.classList.add('property-stop');
@@ -339,7 +325,7 @@ var jsPsychBabaGame = (function () {
                 if (obj.isDefeat) objectElement.classList.add('property-defeat');
                 if (obj.isRed) objectElement.classList.add('property-red');
                 
-                // 添加最近移动对象的标识
+                // add identifier for recently moved objects
                 if (this.gameEngine.recentlyMovedObjects.has(obj)) {
                     objectElement.classList.add('recently-moved');
                 }
@@ -348,9 +334,9 @@ var jsPsychBabaGame = (function () {
             }
         }
         
-        // 已移除 applyTextColor 函数，因为现在使用预生成的彩色文本图片
+        // removed applyTextColor function, because now using pre-generated colored text images
         updateUI() {
-            // 更新时间
+            // update time
             const timeRemaining = this.gameEngine.getRemainingTime();
             const minutes = Math.floor(timeRemaining / 60);
             const seconds = Math.floor(timeRemaining % 60);
@@ -359,10 +345,10 @@ var jsPsychBabaGame = (function () {
                 timeElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
             }
             
-            // 移动计数暂时不显示，因为HTML模板中没有对应元素
-            // 如果需要显示移动计数，可以在HTML模板中添加相应的元素
+            // move count is not displayed for now, because there is no corresponding element in the HTML template
+            // if you need to display move count, you can add the corresponding element in the HTML template
             
-            // 检查时间是否用尽
+            // check if time is up
             if (timeRemaining <= 0 && !this.gameCompleted) {
                 this.endGame(false, 'timeout');
             }
@@ -375,7 +361,7 @@ var jsPsychBabaGame = (function () {
                 const key = event.key;
                 let direction = null;
                 
-                // 方向键移动
+                // arrow keys move
                 switch (key) {
                     case 'ArrowUp':
                         direction = [0, -1];
@@ -448,7 +434,7 @@ var jsPsychBabaGame = (function () {
             this.undoCount = 0;
             this.updateDisplay();
             
-            // 确保重新开始时保持禁用滚动状态
+            // ensure scrolling is disabled when restarting
             if (!document.body.classList.contains('baba-game-active')) {
                 document.body.classList.add('baba-game-active');
             }
@@ -458,7 +444,7 @@ var jsPsychBabaGame = (function () {
             if (!this.gameCompleted) {
                 this.updateUI();
                 
-                // 检查游戏状态
+                // check game state
                 if (this.gameEngine.dead) {
                     this.showDefeatMessage();
                 } else if (this.gameEngine.checkWinCondition()) {
@@ -470,7 +456,7 @@ var jsPsychBabaGame = (function () {
         }
 
         showDefeatMessage() {
-            // 创建失败提示遮罩
+            // create defeat message overlay
             if (!document.getElementById('defeat-overlay')) {
                 const overlay = document.createElement('div');
                 overlay.id = 'defeat-overlay';
@@ -531,7 +517,7 @@ var jsPsychBabaGame = (function () {
                 overlay.appendChild(messageBox);
                 document.body.appendChild(overlay);
                 
-                // 添加按键监听
+                // add key event listener
                 this.defeatKeyHandler = (event) => {
                     if (event.key === 'z' || event.key === 'Z') {
                         this.hideDefeatMessage();
@@ -566,13 +552,13 @@ var jsPsychBabaGame = (function () {
             this.gameWon = won;
             this.endTime = Date.now();
             
-            // 游戏结束时恢复页面滚动
+            // restore page scrolling when game ends
             document.body.classList.remove('baba-game-active');
             
-            // 清理事件监听
+            // clean up event listeners
             document.removeEventListener('keydown', this.keyHandler);
             
-            // 收集数据
+            // collect data
             const trial_data = {
                 level_id: this.currentTrial?.level_data?.level_id || 'unknown',
                 level_name: this.currentTrial?.level_name || 'Unknown Level',
@@ -587,27 +573,25 @@ var jsPsychBabaGame = (function () {
                 operation_count: this.gameEngine.operationCount || 0
             };
             
-            console.log('游戏数据收集:', trial_data); // 调试日志
-            
-            // 显示完成信息
+            // show completion message
             setTimeout(() => {
                 this.showCompletionMessage(won, reason);
                 
-                // 延长胜利提示显示时间0.5s
+                // extend victory message display time by 0.5s
                 setTimeout(() => {
                     this.jsPsych.finishTrial(trial_data);
-                }, 1500); // 延长0.5秒
+                }, 1500); // extend by 0.5s
             }, 200);
         }
 
         showCompletionMessage(won, reason) {
-            // 立即隐藏游戏界面，避免闪屏
+            // immediately hide game interface to avoid flickering
             const gameContainer = document.querySelector('.baba-game-container');
             if (gameContainer) {
                 gameContainer.style.opacity = '0';
             }
             
-            // 创建一个覆盖层显示完成信息
+            // create an overlay to display completion message
             const overlay = document.createElement('div');
             overlay.id = 'completion-overlay';
             overlay.style.cssText = `
@@ -670,7 +654,7 @@ var jsPsychBabaGame = (function () {
             overlay.appendChild(messageBox);
             document.body.appendChild(overlay);
             
-            // 添加样式动画
+            // add style animation
             const style = document.createElement('style');
             style.textContent = `
                 @keyframes fadeIn {
@@ -684,7 +668,7 @@ var jsPsychBabaGame = (function () {
             `;
             document.head.appendChild(style);
             
-            // 自动清理（在进入评分后清理，避免闪屏）
+            // automatically clean up (after entering rating, to avoid flickering)
             setTimeout(() => {
                 if (overlay && overlay.parentNode) {
                     overlay.remove();
@@ -692,7 +676,7 @@ var jsPsychBabaGame = (function () {
                 if (style && style.parentNode) {
                     style.remove();
                 }
-            }, 1600); // 在跳转后再清理，避免闪屏
+            }, 1600); // clean up after transition, to avoid flickering
         }
 
     }

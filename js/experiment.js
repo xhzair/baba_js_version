@@ -1,36 +1,36 @@
 /**
  * Baba is You - jsPsych Experiment
- * 主实验控制文件
+ * Main experiment control file
  */
 
-// ---------- jsPsych 初始化并集成 Prolific ----------
+// ---------- jsPsych initialization and Prolific integration ----------
 const jsPsych = initJsPsych({
     display_element: 'jspsych-target',
     default_iti: 250,
-    override_safe_mode: true, // 允许在file://协议下运行
+    override_safe_mode: true, // Allow running under file:// protocol
     on_finish: function () {
-        // 实验结束时的处理
-        console.log('Experiment completed');
-
-        // 如果来自 Prolific，则自动重定向至完成链接
+        // Handle experiment finish
+        // If from Prolific, automatically redirect to completion link
+        // Please replace XXXXXXX with the Completion Code provided by Prolific
         const pid = jsPsych.data.getURLVariable('PROLIFIC_PID');
         if (pid) {
-            // 请将 XXXXXXX 替换为 Prolific 提供的 Completion Code
+            // Please replace XXXXXXX with the Completion Code provided by Prolific
             window.location.href = 'https://app.prolific.co/submissions/complete?cc=XXXXXXX';
-            return; // 结束
+            return; // End
         }
 
-        // 否则调用实验控制器的数据保存函数
+        // Otherwise, call the experiment controller's data saving function
+        // Fallback: display JSON data
         if (window.experimentController) {
             window.experimentController.saveExperimentData();
         } else {
-            // 备用方案：显示JSON数据
+            // Fallback: display JSON data
             jsPsych.data.displayData('json');
         }
     }
 });
 
-// 捕获 Prolific URL 参数并写入全局 data
+// Capture Prolific URL parameters and write to global data
 (function captureProlificIds() {
     const prolific_pid = jsPsych.data.getURLVariable('PROLIFIC_PID');
     const study_id     = jsPsych.data.getURLVariable('STUDY_ID');
@@ -43,7 +43,7 @@ const jsPsych = initJsPsych({
     });
 })();
 
-// 实验状态管理
+// Experiment state management
 class ExperimentController {
     constructor() {
         this.currentChapter = null;
@@ -53,32 +53,31 @@ class ExperimentController {
         this.completedLevels = { tutorial: [], journey: [] };
         this.experimentData = [];
 
-        // 如果通过 Prolific 进入，则使用 PROLIFIC_PID 作为 participantId；否则生成随机 ID
+        // If entered via Prolific, use PROLIFIC_PID as participantId; otherwise generate random ID
         const prolificPid = jsPsych.data.getURLVariable('PROLIFIC_PID');
         this.participantId = prolificPid || this.generateParticipantId();
         
-        // 随机分配实验条件 (prior-congruent 或 prior-incongruent)
+        // Randomly assign experiment condition (prior-congruent or prior-incongruent)
         this.conditionType = this.randomAssignCondition();
-        console.log(`Participant ${this.participantId} assigned to condition: ${this.conditionType}`);
         
-        // 获取所有关卡数据
+        // Get all level data
         this.allLevels = getAllLevels();
         this.chapters = getChapters();
 
-        // 根据 unlockedLevels 设置章节锁定状态
+        // Set chapter lock status based on unlockedLevels
         this.chapters = this.chapters.map(ch => ({
             ...ch,
             locked: ch.key !== 'tutorial' && (this.unlockedLevels[ch.key] || 0) === 0
         }));
     }
     
-    // 随机分配实验条件
+    // Randomly assign experiment condition
     randomAssignCondition() {
         const conditions = window.getConditionTypes ? 
                           window.getConditionTypes() : 
                           ['high-prior', 'low-prior'];
         
-        // 随机选择一种条件
+        // Randomly select one condition
         const randomIndex = Math.floor(Math.random() * conditions.length);
         return conditions[randomIndex];
     }
@@ -87,38 +86,38 @@ class ExperimentController {
         return 'P_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
     
-    // 创建实验时间线
+    // Create experiment timeline
     createTimeline() {
         const timeline = [];
         
-        // 1a. 实验总体介绍
+        // 1a. Experiment introduction
         timeline.push(this.createExperimentIntroTrial());
         
-        // 1b. Puzzle Game 介绍
+        // 1b. Puzzle Game introduction
         timeline.push(this.createPuzzleIntroTrial());
         
-        // 2. 主游戏循环
+        // 2. Main game loop
         timeline.push(this.createMainGameLoop());
         
-        // 3. 解谜任务总体表现评分
+        // 3. Puzzle solving overall performance scoring
         timeline.push(this.createCompletionTrial());
         
-        // 4. 数字广度测试介绍
+        // 4. Digit Span Test introduction
         timeline.push(this.createDigitSpanIntroTrial());
         
-        // 5. 数字广度测试 - 正序
+        // 5. Digit Span Test - Forward
         timeline.push(this.createDigitSpanForwardTrial());
         
-        // 5b. 过渡页面：提示即将开始倒序
+        // 5b. Transition page: Prompting upcoming reverse
         timeline.push(this.createDigitSpanTransitionTrial());
         
-        // 6. 数字广度测试 - 倒序
+        // 6. Digit Span Test - Reverse
         timeline.push(this.createDigitSpanBackwardTrial());
         
-        // 7. DSST 介绍
+        // 7. DSST introduction
         timeline.push(this.createDSSTIntroTrial());
         
-        // 8. DSST 任务
+        // 8. DSST task
         timeline.push(this.createDSSTTaskTrial());
         
         // 9. Alternative Uses Test (AUT)
@@ -180,7 +179,7 @@ class ExperimentController {
         return {
             type: jsPsychBabaInstructions,
             title: 'Welcome to the Puzzle Game',
-            instructions: '', // 使用插件默认说明
+            instructions: '', // Use plugin default instructions
             button_text: 'Start Puzzle Game',
             show_controls: true,
             data: {
@@ -250,7 +249,7 @@ class ExperimentController {
     createMainGameLoop() {
         const gameLoop = {
             timeline: [
-                // 章节选择
+                // Chapter selection
                 {
                     type: jsPsychChapterSelect,
                     selection_type: 'chapter',
@@ -260,15 +259,15 @@ class ExperimentController {
                         participant_id: this.participantId
                     },
                     on_finish: (data) => {
-                        // 保存当前选择的章节
+                        // Save current selected chapter
                         this.currentChapter = data.chapter_key;
                     }
                 },
                 
-                // 关卡选择和游戏循环
+                // Level selection and game loop
                 {
                     timeline: [
-                        // 关卡选择
+                        // Level selection
                         {
                             type: jsPsychChapterSelect,
                             selection_type: 'level',
@@ -290,24 +289,24 @@ class ExperimentController {
                                 participant_id: this.participantId
                             },
                             on_finish: (data) => {
-                                // 保存当前选择的关卡索引
+                                // Save current selected level index
                                 this.currentLevelIndex = data.selected_level;
                             }
                         },
                         
-                        // 游戏关卡和评分的条件时间轴
+                        // Game level and scoring condition timeline
                         {
                             timeline: [
-                                // 游戏关卡
+                                // Game level
                                 {
                                     type: jsPsychBabaGame,
                                     level_data: () => {
                                         const lastTrialData = jsPsych.data.getLastTrialData().values()[0];
                                         const levelId = lastTrialData.level_data.level_id;
                                         
-                                        // 只对journey章节的关卡使用实验条件
+                                        // Only use experiment condition for journey levels
                                         if (levelId.startsWith('journey_')) {
-                                            // 使用分配的实验条件生成关卡
+                                            // Use assigned experiment condition to generate level
                                             return generateLevel(levelId, this.conditionType);
                                         }
                                         
@@ -324,17 +323,17 @@ class ExperimentController {
                                     data: {
                                         trial_type: 'game_level',
                                         participant_id: this.participantId,
-                                        condition_type: this.conditionType  // 记录使用的实验条件
+                                        condition_type: this.conditionType  // Record used experiment condition
                                     },
                                     on_finish: (data) => {
-                                        // 更新游戏状态
+                                        // Update game status
                                         if (data.success) {
                                             this.markLevelCompleted(this.currentChapter, this.currentLevelIndex);
                                         }
                                     }
                                 },
                                 
-                                // 难度评分
+                                // Difficulty scoring
                                 {
                                     type: jsPsychRatingScale,
                                     rating_type: 'difficulty',
@@ -343,7 +342,7 @@ class ExperimentController {
                                             const gameTrialData = jsPsych.data.getLastTimelineData().filter({trial_type: 'game_level'}).values()[0];
                                             return gameTrialData && gameTrialData.level_name ? gameTrialData.level_name : 'Unknown Level';
                                         } catch (error) {
-                                            console.warn('无法获取关卡名称:', error);
+                                            console.warn('Unable to retrieve level name:', error);
                                             return 'Unknown Level';
                                         }
                                     },
@@ -353,7 +352,7 @@ class ExperimentController {
                                     }
                                 },
                                 
-                                // 创意评分
+                                // Creativity scoring
                                 {
                                     type: jsPsychRatingScale,
                                     rating_type: 'creativity',
@@ -362,7 +361,7 @@ class ExperimentController {
                                             const gameTrialData = jsPsych.data.getLastTimelineData().filter({trial_type: 'game_level'}).values()[0];
                                             return gameTrialData && gameTrialData.level_name ? gameTrialData.level_name : 'Unknown Level';
                                         } catch (error) {
-                                            console.warn('无法获取关卡名称:', error);
+                                            console.warn('Unable to retrieve level name:', error);
                                             return 'Unknown Level';
                                         }
                                     },
@@ -372,7 +371,7 @@ class ExperimentController {
                                     }
                                 },
                                 
-                                // 玩家反馈收集
+                                // Player feedback collection
                                 {
                                     type: jsPsychFeedbackInput,
                                     level_name: () => {
@@ -380,7 +379,7 @@ class ExperimentController {
                                             const gameTrialData = jsPsych.data.getLastTimelineData().filter({trial_type: 'game_level'}).values()[0];
                                             return gameTrialData && gameTrialData.level_name ? gameTrialData.level_name : 'Unknown Level';
                                         } catch (error) {
-                                            console.warn('无法获取关卡名称:', error);
+                                            console.warn('Unable to retrieve level name:', error);
                                             return 'Unknown Level';
                                         }
                                     },
@@ -400,7 +399,7 @@ class ExperimentController {
                         }
                     ],
                     loop_function: () => {
-                        // 检查当前章节是否还有未完成的关卡
+                        // Check if there are remaining levels in the current chapter
                         return this.hasRemainingLevelsInChapter(this.currentChapter);
                     },
                     conditional_function: () => {
@@ -410,7 +409,7 @@ class ExperimentController {
                 }
             ],
             loop_function: () => {
-                // 检查是否还有其他章节需要完成
+                // Check if there are other chapters to complete
                 return this.hasRemainingLevels();
             }
         };
@@ -434,7 +433,7 @@ class ExperimentController {
         if (!this.completedLevels[chapterKey].includes(levelIndex)) {
             this.completedLevels[chapterKey].push(levelIndex);
             
-            // 解锁下一关
+            // Unlock next level
             if (levelIndex + 1 < this.allLevels[chapterKey].length) {
                 this.unlockedLevels[chapterKey] = Math.max(
                     this.unlockedLevels[chapterKey], 
@@ -442,12 +441,12 @@ class ExperimentController {
                 );
             }
             
-            // 如果完成了tutorial的所有关卡，解锁journey
+            // If all levels in tutorial are completed, unlock journey
             if (chapterKey === 'tutorial' && 
                 this.completedLevels[chapterKey].length >= this.allLevels[chapterKey].length) {
                 this.unlockedLevels['journey'] = 1;
 
-                // 解锁journey章节对应的locked标记
+                // Unlock journey chapter's locked marker
                 const journeyChapter = this.chapters.find(c => c.key === 'journey');
                 if (journeyChapter) journeyChapter.locked = false;
             }
@@ -455,7 +454,7 @@ class ExperimentController {
     }
     
     hasRemainingLevels() {
-        // 检查是否还有未完成的关卡
+        // Check if there are remaining levels to complete
         for (const chapterKey of Object.keys(this.allLevels)) {
             const totalLevels = this.allLevels[chapterKey].length;
             const completedCount = this.completedLevels[chapterKey].length;
@@ -475,10 +474,10 @@ class ExperimentController {
     }
     
     saveExperimentData() {
-        // 收集所有实验数据
+        // Collect all experiment data
         const allData = jsPsych.data.get();
         
-        // 获取设备信息
+        // Get device information
         const deviceInfo = {
             browser: navigator.userAgent,
             os: navigator.platform,
@@ -486,33 +485,33 @@ class ExperimentController {
             window_size: [window.innerWidth, window.innerHeight]
         };
         
-        // 正确获取各任务数据
+        // Correctly get each task data
         const babaGameData = allData.filter({trial_type: 'baba-game'}).values();
         
-        // 数字串数据 - 从插件返回的数据中提取
+        // Digit span data - Extract from plugin return data
         const digitSpanTrials = allData.filter(data => data.task === 'digit_span_forward' || data.task === 'digit_span_backward').values();
         const digitSpanData = {
             forward: digitSpanTrials.filter(data => data.task === 'digit_span_forward'),
             backward: digitSpanTrials.filter(data => data.task === 'digit_span_backward')
         };
         
-        // DSST数据 - 从插件返回的数据中提取
+        // DSST data - Extract from plugin return data
         const dsstData = allData.filter(data => data.task === 'dsst').values();
         
-        // 其他认知任务数据
+        // Other cognitive task data
         const verbalFluencyData = allData.filter(data => data.task === 'verbal_fluency').values();
         const autData = allData.filter(data => data.task === 'aut').values();
         
-        // 问卷数据 - 只包含真正的问卷数据
+        // Questionnaire data - Only include true questionnaire data
         const questionnaireData = allData.filter(data => 
             data.trial_type && 
             (data.trial_type.includes('questionnaire') || data.question_source)
         ).values();
         
-        // 收集玩家反馈数据
+        // Collect player feedback data
         const playerFeedbackData = allData.filter({trial_type: 'player_feedback'}).values();
         
-        // 确定任务完成情况
+        // Determine task completion status
         const tasksCompleted = [];
         if (babaGameData.length > 0) tasksCompleted.push('baba_game');
         if (digitSpanData.forward.length > 0) tasksCompleted.push('digit_span_forward');
@@ -522,19 +521,19 @@ class ExperimentController {
         if (autData.length > 0) tasksCompleted.push('aut');
         if (questionnaireData.length > 0) tasksCompleted.push('questionnaire');
         
-        // 确定完成状态
+        // Determine completion status
         let completionStatus = 'completed';
         if (tasksCompleted.length < 7) {
             completionStatus = tasksCompleted.length > 3 ? 'partial' : 'abandoned';
         }
         
-        // 记录实验开始和结束时间
+        // Record experiment start and end time
         const startTime = allData.values()[0] ? new Date(allData.values()[0].time_elapsed).toISOString() : new Date().toISOString();
         const endTime = new Date().toISOString();
         const totalDuration = allData.values()[allData.count() - 1] ? 
             allData.values()[allData.count() - 1].time_elapsed / 1000 : 0;
         
-        // 创建符合data_structure.md格式的实验报告
+        // Create experiment report in accordance with data_structure.md format
         const experimentSummary = {
             participant_id: this.participantId,
             session_id: `session_${Date.now()}`,
@@ -545,13 +544,13 @@ class ExperimentController {
             completion_status: completionStatus,
             device_info: deviceInfo,
             
-            // 实验条件信息
+            // Experiment condition information
             experimental_condition: this.conditionType,
             
-            // 完成任务列表
+            // Completed tasks list
             tasks_completed: tasksCompleted,
             
-            // 各任务详细数据 - 只包含真正的任务数据
+            // Each task detailed data - Only include true task data
             baba_game_data: babaGameData,
             digit_span_data: digitSpanData,
             dsst_data: dsstData,
@@ -559,21 +558,21 @@ class ExperimentController {
             aut_data: autData,
             questionnaire_data: questionnaireData,
             
-            // 游戏进度数据
+            // Game progress data
             completed_levels: this.completedLevels,
             unlocked_levels: this.unlockedLevels,
             
-            // 原始试次数据
+            // Raw trial data
             raw_trial_data: allData.values(),
             
-            // 玩家反馈数据
+            // Player feedback data
             player_feedback_data: playerFeedbackData
         };
         
-        // 保存到本地存储
+        // Save to local storage
         localStorage.setItem(`baba_experiment_${this.participantId}`, JSON.stringify(experimentSummary));
         
-        // 尝试将数据下载为JSON文件
+        // Try to download data as JSON file
         try {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(experimentSummary, null, 2));
             const downloadAnchorNode = document.createElement('a');
@@ -583,12 +582,10 @@ class ExperimentController {
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
         } catch (e) {
-            console.error("下载数据文件失败:", e);
+            console.error("Failed to download data file:", e);
         }
         
-        console.log('Experiment data saved:', experimentSummary);
-        
-        // 显示感谢信息
+        // Display thank you information
         document.body.innerHTML = `
             <div style="text-align: center; padding: 50px; font-family: Verdana, Arial, sans-serif; background-color: #7d7d7d; color: white; min-height: 100vh;">
                 <h1>Experiment completed!</h1>
@@ -727,7 +724,7 @@ class ExperimentController {
         };
     }
 
-    // 新增：正序结束后到倒序的过渡页面
+    // New: Transition page after forward sequence ends to reverse sequence
     createDigitSpanTransitionTrial() {
         return {
             type: jsPsychHtmlButtonResponse,
@@ -745,44 +742,38 @@ class ExperimentController {
     }
 }
 
-// 页面加载完成后启动实验
+// Start experiment when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM加载完成，开始初始化实验...');
     
     try {
-        // 检查必需的函数是否存在
+        // Check if required functions exist
         if (typeof getAllLevels === 'undefined') {
-            throw new Error('getAllLevels函数未定义，请检查level-data.js文件');
+            throw new Error('getAllLevels function not defined, please check level-data.js file');
         }
         
         if (typeof getChapters === 'undefined') {
-            throw new Error('getChapters函数未定义，请检查level-data.js文件');
+            throw new Error('getChapters function not defined, please check level-data.js file');
         }
         
         if (typeof jsPsychBabaInstructions === 'undefined') {
-            throw new Error('jsPsychBabaInstructions插件未定义');
+            throw new Error('jsPsychBabaInstructions plugin not defined');
         }
         
-        console.log('必需的函数和插件检查通过');
-        
-        // 初始化实验控制器
+        // Initialize experiment controller
         const experimentController = new ExperimentController();
-        window.experimentController = experimentController; // 保存到全局变量
-        console.log('实验控制器初始化成功');
+        window.experimentController = experimentController; // Save to global variable
         
-        // 创建并运行实验
+        // Create and run experiment
         const timeline = experimentController.createTimeline();
-        console.log('实验时间线创建成功，包含', timeline.length, '个试验');
         
-        // 运行实验
+        // Run experiment
         jsPsych.run(timeline);
-        console.log('实验启动成功');
         window.experimentStarted = true;
         
     } catch (error) {
-        console.error('实验初始化失败:', error);
+        console.error('Experiment initialization failed:', error);
         
-        // 显示错误信息
+        // Display error information
         document.getElementById('jspsych-target').innerHTML = `
             <div style="padding: 50px; text-align: center; font-family: Arial, sans-serif;">
                 <h1 style="color: red;">Failed to load experiment</h1>
@@ -803,12 +794,11 @@ document.addEventListener('DOMContentLoaded', function() {
      }
 });
 
-// 备用启动方法（如果DOM事件监听器失败）
+// Alternative start method (if DOM event listener fails)
 setTimeout(function() {
     if (!window.experimentStarted) {
-        console.log('使用备用启动方法...');
         
-        // 显示加载信息
+        // Display loading information
         const target = document.getElementById('jspsych-target');
         if (target && target.innerHTML.trim() === '') {
             target.innerHTML = `

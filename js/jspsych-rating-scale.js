@@ -1,6 +1,6 @@
 /**
  * jsPsych Rating Scale Plugin
- * 用于收集关卡完成后的评分数据
+ * Used to collect rating data after level completion
  */
 
 var jsPsychRatingScale = (function () {
@@ -94,13 +94,13 @@ var jsPsychRatingScale = (function () {
             const startTime = Date.now();
             this.selectedRating = null;
             
-            // 根据评分类型设置默认问题和标签
+            // set default questions and labels based on rating type
             this.setupRatingContent(trial);
             
-            // 创建评分界面
+            // create rating interface
             this.createRatingDisplay(display_element, trial);
             
-            // 设置事件监听
+            // set event listeners
             this.setupEventListeners(trial, startTime);
         }
 
@@ -137,10 +137,10 @@ var jsPsychRatingScale = (function () {
         }
 
         createRatingDisplay(display_element, trial) {
-            // 计算评分按钮的总宽度：按钮数量 * 按钮宽度 + 间距
+            // calculate total width of rating buttons: button count * button width + gap
             const numButtons = trial.scale_max - trial.scale_min + 1;
-            const buttonWidth = 50; // 与CSS rating-option的宽度一致
-            const gapWidth = 10; // 与CSS rating-scale的gap一致
+            const buttonWidth = 50; // same as CSS rating-option width
+            const gapWidth = 10; // same as CSS rating-scale gap
             const totalWidth = numButtons * buttonWidth + (numButtons - 1) * gapWidth;
             
             const html = `
