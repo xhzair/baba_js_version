@@ -103,16 +103,23 @@ var jsPsychVerbalFluency = (function(){
                 </div>
                 <h2 style='color:#3ca5ff;'>${this.practiceCategory}</h2>
                 <textarea id='vf-practice-input' placeholder='Please enter directly' style='width:80vw;max-width:1000px;min-width:400px;height:100px;margin-top:20px;font-size:18px;'></textarea>
-                <p id='vf-practice-hint' style='color:#cccccc;margin-top:8px;'>Please enter ${this.practiceCategory.toLowerCase()} names separated by commas.</p>
+                <p id='vf-practice-hint' style='color:#cccccc;margin-top:8px;'>Please enter ${this.practiceCategory.toLowerCase()} names separated by commas (e.g., hammer, scissors, ruler)</p>
+                <p id='vf-practice-warning' style='color:#ff6b6b;margin-top:8px;font-size:14px;display:none;'>⚠️ Please use commas to separate the names!</p>
                 <button id='vf-practice-next' class='baba-button' style='margin-top:30px;' disabled>Proceed to Formal Test</button>
             </div>`;
 
             const textarea = el.querySelector('#vf-practice-input');
             const nextBtn = el.querySelector('#vf-practice-next');
+            const hintEl = el.querySelector('#vf-practice-hint');
+            const warningEl = el.querySelector('#vf-practice-warning');
+            
             textarea.addEventListener('input', ()=>{
                 this.practiceInput = textarea.value;
                 this.practiceNames = this.practiceInput.split(',').map(s=>s.trim()).filter(s=>s);
                 nextBtn.disabled = this.practiceNames.length < 3;
+                
+                // check input format
+                this.validateInputFormat(this.practiceInput, hintEl, warningEl);
             });
 
             nextBtn.addEventListener('click', ()=>{
@@ -145,31 +152,36 @@ var jsPsychVerbalFluency = (function(){
                 <h2 style='color:#3ca5ff;'>${this.testCategory}</h2>
                 <div id='vf-timer' style='color:#ff4444;font-size:24px;margin-top:10px;'>Time left: ${this.timeLimit.toFixed(1)} s</div>
                 <textarea id='vf-test-input' placeholder='Please enter directly' style='width:80vw;max-width:1000px;min-width:400px;height:220px;margin-top:30px;font-size:18px;'></textarea>
-                <p style='color:#cccccc;margin-top:8px;'>Please enter ${this.testCategory.toLowerCase()} names separated by commas. You can submit early, or it will submit automatically when time is up.</p>
-                <button id='vf-submit' class='baba-button' style='margin-top:20px;'>Submit</button>
+                <p id='vf-test-hint' style='color:#cccccc;margin-top:8px;'>Please enter ${this.testCategory.toLowerCase()} names separated by commas (e.g., cat, dog, bird)</p>
+                <p id='vf-test-warning' style='color:#ff6b6b;margin-top:8px;font-size:14px;display:none;'>⚠️ Please use commas to separate the names!</p>
+                <div style='color:#cccccc;margin-top:20px;font-size:14px;'>The test will automatically submit when time is up.</div>
             </div>`;
 
             // prepare state
             const textarea = el.querySelector('#vf-test-input');
-            const submitBtn  = el.querySelector('#vf-submit');
+            const hintEl = el.querySelector('#vf-test-hint');
+            const warningEl = el.querySelector('#vf-test-warning');
             this.startTime = performance.now();
             
-            // 添加词语输入时间记录
+            // add word input time recording
             this.wordTimestamps = [];
             let previousText = '';
             let lastCommaCount = 0;
             
-            // 检测新单词输入
+            // detect new word input and validate format
             textarea.addEventListener('input', () => {
                 const currentTime = performance.now();
                 const elapsedTime = (currentTime - this.startTime) / 1000;
                 const currentText = textarea.value;
                 
-                // 检查是否有新的逗号出现
+                // check input format
+                this.validateInputFormat(currentText, hintEl, warningEl);
+                
+                // check if there is a new comma
                 const currentCommas = (currentText.match(/,/g) || []).length;
                 
                 if (currentCommas > lastCommaCount) {
-                    // 提取最新输入的单词
+                    // extract the latest input word
                     const words = currentText.split(',').map(w => w.trim()).filter(w => w);
                     const newWord = words[words.length - 1];
                     
@@ -194,18 +206,14 @@ var jsPsychVerbalFluency = (function(){
                 if(tEl){ tEl.textContent = `Time left: ${Math.max(0,remain).toFixed(1)} s`; }
                 if(remain <= 0){
                     clearInterval(this.timer);
-                    submitBtn.click();
+                    // auto-submit when time is up
+                    this.testInput = textarea.value;
+                    this.testNames = this.testInput.split(',').map(s=>s.trim()).filter(s=>s);
+                    this.usedTime = Math.min(this.timeLimit, (performance.now() - this.startTime)/1000);
+                    this.phase = 'result';
+                    this.showResult(el);
                 }
             }, 100);
-
-            submitBtn.addEventListener('click', ()=>{
-                clearInterval(this.timer);
-                this.testInput = textarea.value;
-                this.testNames = this.testInput.split(',').map(s=>s.trim()).filter(s=>s);
-                this.usedTime = Math.min(this.timeLimit, (performance.now() - this.startTime)/1000);
-                this.phase = 'result';
-                this.showResult(el);
-            });
         }
 
         showResult(el){
@@ -223,13 +231,44 @@ var jsPsychVerbalFluency = (function(){
         }
 
         /* ---------- Utility ---------- */
+        validateInputFormat(text, hintEl, warningEl) {
+            // check if there is content but no comma separation
+            const trimmedText = text.trim();
+            if (trimmedText.length > 0) {
+                // check if there is a comma
+                const hasComma = trimmedText.includes(',');
+                
+                // check if there are multiple words but no comma separation
+                const words = trimmedText.split(/\s+/);
+                const hasMultipleWords = words.length > 1;
+                
+                if (hasMultipleWords && !hasComma) {
+                    // show warning
+                    warningEl.style.display = 'block';
+                    hintEl.style.display = 'none';
+                } else if (hasComma) {
+                    // hide warning, show hint
+                    warningEl.style.display = 'none';
+                    hintEl.style.display = 'block';
+                } else {
+                    // single word, show hint
+                    warningEl.style.display = 'none';
+                    hintEl.style.display = 'block';
+                }
+            } else {
+                // empty content, show hint
+                warningEl.style.display = 'none';
+                hintEl.style.display = 'block';
+            }
+        }
+        
         finish(){
-            // 检查是否有尚未记录时间戳的最后一个单词
+            // check if there is a last word that has not been recorded
             const finalWords = this.testInput.split(',').map(w => w.trim()).filter(w => w);
             if (finalWords.length > 0 && (this.wordTimestamps.length === 0 || 
                 finalWords[finalWords.length - 1] !== this.wordTimestamps[this.wordTimestamps.length - 1]?.word)) {
                 
-                // 添加最后一个单词的时间
+                // add the last word time
                 const lastWordTime = this.usedTime || this.timeLimit;
                 this.wordTimestamps.push({
                     word: finalWords[finalWords.length - 1],
@@ -238,7 +277,7 @@ var jsPsychVerbalFluency = (function(){
                 });
             }
             
-            // 计算响应时间间隔
+            // calculate response time intervals
             const responseIntervals = [];
             if (this.wordTimestamps.length > 1) {
                 for (let i = 1; i < this.wordTimestamps.length; i++) {
@@ -248,14 +287,14 @@ var jsPsychVerbalFluency = (function(){
                 }
             }
             
-            // 分析响应模式
+            // analyze response patterns
             const averageInterval = responseIntervals.length > 0 ? 
                 responseIntervals.reduce((sum, val) => sum + val, 0) / responseIntervals.length : 0;
                 
             const maxInterval = responseIntervals.length > 0 ? 
                 Math.max(...responseIntervals) : 0;
                 
-            // 标准差计算
+            // calculate standard deviation
             let stdDeviation = 0;
             if (responseIntervals.length > 1) {
                 const squaredDiffs = responseIntervals.map(val => Math.pow(val - averageInterval, 2));

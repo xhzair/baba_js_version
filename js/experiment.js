@@ -91,7 +91,13 @@ class ExperimentController {
     createTimeline() {
         const timeline = [];
         
-        // 1a. Experiment introduction
+        // 0. Screening questionnaire
+        timeline.push(this.createScreeningTrial());
+        
+        // 1a. Informed consent
+        timeline.push(this.createInformedConsentTrial());
+        
+        // 1b. Experiment introduction
         timeline.push(this.createExperimentIntroTrial());
         
         // 1b. Puzzle Game introduction
@@ -147,6 +153,84 @@ class ExperimentController {
         timeline.push(this.createQuestionnaireTrial());
         
         return timeline;
+    }
+    
+    createScreeningTrial() {
+        return {
+            type: jsPsychScreeningQuestionnaire,
+            participant_id: this.participantId,
+            data: {
+                trial_type: 'screening_questionnaire',
+                participant_id: this.participantId
+            }
+        };
+    }
+    
+    createInformedConsentTrial() {
+        return {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <h1 style="color: white; text-align: center; margin-bottom: 20px;">Informed Consent</h1>
+                <div style="color: white; max-width: 800px; margin: 0 auto; font-size: 16px; line-height: 1.5; text-align: left; background-color: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px;">
+                    <h2 style="color: white; margin-bottom: 15px;">Problem-Solving and Cognitive Abilities Study</h2>
+                    
+                    <p><strong>Purpose:</strong> This study investigates problem-solving abilities and cognitive functions in adults.</p>
+                    
+                    <p><strong>What you will do:</strong> Complete a puzzle game, some cognitive tests, and brief questionnaires. Duration: 45-60 minutes.</p>
+                    
+                    <p><strong>Confidentiality:</strong> Your responses are confidential and used only for research purposes.</p>
+                    
+                    <p><strong>Voluntary participation:</strong> You may withdraw at any time without penalty.</p>
+                    
+                    <p><strong>Contact:</strong> Questions? Email xuhuizhang@pku.edu.cn</p>
+                    
+                    <div style="background-color: rgba(255, 255, 255, 0.2); padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <p style="margin: 0; font-weight: bold;">By clicking "I Agree", you confirm that:</p>
+                        <ul style="margin: 8px 0 0 20px;">
+                            <li>You understand the information above</li>
+                            <li>You are 18+ years old</li>
+                            <li>You voluntarily agree to participate</li>
+                        </ul>
+                    </div>
+                </div>
+            `,
+            choices: ['I Agree', 'I Do Not Agree'],
+            data: {
+                trial_type: 'informed_consent',
+                participant_id: this.participantId
+            },
+            on_finish: function(data) {
+                // If participant does not agree, exit the experiment
+                if (data.response === 1) { // "I Do Not Agree" button
+                    // Create exit message
+                    const exitMessage = `
+                        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; color: white; font-size: 24px; text-align: center;">
+                            <h2>Thank you for your time</h2>
+                            <p>You have chosen not to participate in this study.</p>
+                            <p>The experiment will close automatically in <span id="exit-countdown">5</span> seconds.</p>
+                        </div>
+                    `;
+                    document.body.innerHTML = exitMessage;
+                    
+                    // Countdown and close
+                    let remaining = 5;
+                    const timer = setInterval(() => {
+                        remaining--;
+                        const span = document.getElementById('exit-countdown');
+                        if (span) span.textContent = remaining.toString();
+                        if (remaining <= 0) {
+                            clearInterval(timer);
+                            try {
+                                window.close();
+                                setTimeout(() => location.href = 'about:blank', 100);
+                            } catch (e) {
+                                location.href = 'about:blank';
+                            }
+                        }
+                    }, 1000);
+                }
+            }
+        };
     }
     
     createExperimentIntroTrial() {

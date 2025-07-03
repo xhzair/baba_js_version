@@ -70,11 +70,11 @@ var jsPsychQuestionnaire = (function(){
             const q = this.items[this.idx];
             // base container
             el.innerHTML = `<div class='q-container' style='width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;'>
-                <h2 style='color:white;margin-bottom:10px;'>Question ${this.idx + 1} / ${this.items.length}</h2>
-                <h3 style='color:white;text-align:center;margin-bottom:20px;'>${q.question}</h3>
-                ${q.prompt ? `<p style='color:#cccccc;max-width:800px;text-align:center;margin-bottom:10px;'>${q.prompt}</p>` : ''}
-                <div id='q-options' style='margin-top:10px;'></div>
-                <button id='q-next' class='baba-button' style='margin-top:30px;' disabled>Next</button>
+                <h2 style='color:white;margin-bottom:15px;font-size:28px;'>Question ${this.idx + 1} / ${this.items.length}</h2>
+                <h3 style='color:white;text-align:center;margin-bottom:25px;font-size:24px;line-height:1.4;max-width:900px;'>${q.question}</h3>
+                ${q.prompt ? `<p style='color:#cccccc;max-width:900px;text-align:center;margin-bottom:15px;font-size:20px;line-height:1.5;'>${q.prompt}</p>` : ''}
+                <div id='q-options' style='margin-top:15px;'></div>
+                <button id='q-next' class='baba-button' style='margin-top:30px;font-size:20px;padding:12px 24px;' disabled>Next</button>
             </div>`;
 
             const optionsDiv = el.querySelector('#q-options');
@@ -93,9 +93,9 @@ var jsPsychQuestionnaire = (function(){
                 q.options.forEach((opt,i)=>{
                     const optId = `opt_${i}`;
                     const wrapper = document.createElement('div');
-                    wrapper.style.margin = '6px 0';
+                    wrapper.style.margin = '12px 0';
                     wrapper.style.color = 'white';
-                    wrapper.innerHTML = `<label style='cursor:pointer;'><input type='radio' name='opt' id='${optId}' value='${opt.value}' style='margin-right:8px;'>${opt.text}</label>`;
+                    wrapper.innerHTML = `<label style='cursor:pointer;font-size:20px;line-height:1.4;display:flex;align-items:center;'><input type='radio' name='opt' id='${optId}' value='${opt.value}' style='margin-right:12px;transform:scale(1.3);'>${opt.text}</label>`;
                     optionsDiv.appendChild(wrapper);
                 });
                 optionsDiv.addEventListener('change', (ev)=>{
@@ -108,10 +108,12 @@ var jsPsychQuestionnaire = (function(){
             } else if(q.type === 'text'){
                 const input = document.createElement('textarea');
                 input.style.width = '80vw';
-                input.style.maxWidth = '600px';
-                input.style.minWidth = '300px';
-                input.style.height = '100px';
-                input.style.fontSize = '18px';
+                input.style.maxWidth = '700px';
+                input.style.minWidth = '400px';
+                input.style.height = '120px';
+                input.style.fontSize = '20px';
+                input.style.padding = '15px';
+                input.style.lineHeight = '1.5';
                 input.placeholder = 'Please enter here';
                 optionsDiv.appendChild(input);
                 input.addEventListener('input', ()=>{
@@ -192,14 +194,14 @@ var jsPsychQuestionnaire = (function(){
             title.style.cssText = `
                 color: #f44336;
                 margin-bottom: 20px;
-                font-size: 24px;
+                font-size: 28px;
             `;
             
             const message = document.createElement('p');
             message.textContent = 'We detected that you may not have read the question carefully. Please re-answer this question and read all options carefully.';
             message.style.cssText = `
                 color: #333;
-                font-size: 16px;
+                font-size: 20px;
                 margin-bottom: 20px;
                 line-height: 1.5;
             `;
@@ -211,11 +213,11 @@ var jsPsychQuestionnaire = (function(){
                 background-color: #4CAF50;
                 border: none;
                 color: white;
-                padding: 10px 20px;
+                padding: 15px 30px;
                 text-align: center;
                 text-decoration: none;
                 display: inline-block;
-                font-size: 16px;
+                font-size: 20px;
                 margin: 10px 2px;
                 cursor: pointer;
                 border-radius: 5px;

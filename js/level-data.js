@@ -397,6 +397,10 @@ const LEVEL_DATA = {
 
                 {type: "${win_obj}", pos: [10, 5], properties: ["win"]},
 
+                {type: "${stop_obj}", pos: [0, 1], properties: ["stop"]},
+                {type: "${stop_obj}", pos: [1, 1], properties: ["stop"]},
+                {type: "${stop_obj}", pos: [2, 1], properties: ["stop"]},
+
                 {type: "${stop_obj}", pos: [6, 1], properties: ["stop"]},
                 {type: "${stop_obj}", pos: [6, 2], properties: ["stop"]},
                 {type: "${stop_obj}", pos: [6, 3], properties: ["stop"]},

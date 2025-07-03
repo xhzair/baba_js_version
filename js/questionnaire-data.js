@@ -510,7 +510,7 @@ window.embeddedQuestionnaire = [
         "id": 19,
         "source": "AARC",
         "type": "likert",
-        "question": "With my increasing age, I realize taht I appreciate relationships and people much more.",
+        "question": "With my increasing age, I realize that I appreciate relationships and people much more.",
         "options": [
             {
                 "text": "Strongly disagree",

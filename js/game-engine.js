@@ -782,6 +782,11 @@ class BabaGameEngine {
     }
     
     checkWinCondition() {
+        // if already defeated, can't win
+        if (this.dead) {
+            return false;
+        }
+        
         const youObjects = this.objects.filter(obj => obj.isYou);
         const winObjects = this.objects.filter(obj => obj.isWin);
         
@@ -790,8 +795,7 @@ class BabaGameEngine {
         for (const youObj of youObjects) {
             for (const winObj of winObjects) {
                 if (youObj.position[0] === winObj.position[0] &&
-                    youObj.position[1] === winObj.position[1] &&
-                    youObj !== winObj) {
+                    youObj.position[1] === winObj.position[1]) {
                     return true;
                 }
             }
@@ -1286,11 +1290,12 @@ class BabaGameEngine {
         };
         this.moveTimestamps.push(moveTimestamp);
         
-        // Reset to initial state
+        // Reset to initial state (but keep the original start time)
         this.dead = false;
         this.paused = false;
-        this.startTime = Date.now();
-        this.totalPauseTime = 0;
+        // 不重置开始时间，保持原有的8分钟限制
+        // this.startTime = Date.now();  // 注释掉这行
+        // this.totalPauseTime = 0;      // 注释掉这行
         this.operationCount = 0;
         this.errorAttempts = 0;
         this.savedStates = [];
