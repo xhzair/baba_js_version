@@ -67,7 +67,19 @@ class Rule {
 
 class BabaGameEngine {
     constructor(levelData, timeLimit = 480) {
+        console.log('Initializing BabaGameEngine with levelData:', levelData);
+        
+        if (!levelData) {
+            console.error('levelData is null or undefined');
+            throw new Error('levelData is required');
+        }
+        
         this.gridSize = levelData.grid_size || levelData.gridSize;
+        if (!this.gridSize) {
+            console.error('gridSize is missing from levelData:', levelData);
+            throw new Error('gridSize is required in levelData');
+        }
+        
         this.objects = [];
         this.rules = [];
         this.initialRules = levelData.initial_rules || [];
@@ -96,10 +108,13 @@ class BabaGameEngine {
         this.lastMoveTime = this.startTime;
         this.initRuleOperationStats();
         
+        console.log('Initializing objects with elements:', this.initialElements);
         this.initializeObjects(levelData.elements);
+        console.log('Initializing rules with initialRules:', this.initialRules);
         this.initializeRules();
         this.updateObjectProperties();
         this.parseRulesFromBoard();
+        console.log('BabaGameEngine initialization complete');
     }
     
     initializeObjects(elementsData) {

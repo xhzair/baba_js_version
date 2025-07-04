@@ -539,13 +539,22 @@ const LEVEL_DATA = {
  * @returns {Object} generated level data
  */
 function generateLevel(templateId, conditionType = 'high-prior') {
+    console.log(`Generating level: ${templateId} with condition: ${conditionType}`);
+    
     const template = LEVEL_DATA.journey_templates.find(t => t.level_id === templateId);
-    if (!template) return null;
+    if (!template) {
+        console.error(`Template not found for level: ${templateId}`);
+        return null;
+    }
+    
+    console.log(`Found template:`, template);
     
     // use new experimental condition system
     const objMapping = window.getExperimentalCondition ? 
                        window.getExperimentalCondition(templateId, conditionType) :
                        LEVEL_DATA.experimental_conditions.default;
+    
+    console.log(`Using object mapping:`, objMapping);
     
     // deep copy template
     const level = JSON.parse(JSON.stringify(template));
