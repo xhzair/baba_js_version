@@ -294,10 +294,13 @@ var jsPsychPavlovia = (function (jspsych) {
         // query pavlovia server:
         return new Promise((resolve, reject) => {
             const url = _config.pavlovia.URL + '/api/v2/experiments/' + encodeURIComponent(_config.experiment.fullpath) + '/sessions';
+            // encode as application/x-www-form-urlencoded (Pavlovia API expects form encoding)
+            const bodyParams = new URLSearchParams();
+            Object.entries(data).forEach(([k, v]) => bodyParams.append(k, v));
+
             fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: bodyParams
             })
                 .then(async (res) => {
                     if (!res.ok) throw await res.text();
@@ -350,10 +353,12 @@ var jsPsychPavlovia = (function (jspsych) {
         }
         else {
             // asynchronously query the pavlovia server:
+            const delParams = new URLSearchParams();
+            delParams.append('isCompleted', isCompleted);
+
             return fetch(url, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ isCompleted })
+                body: delParams
             })
                 .then(async (res) => {
                     if (!res.ok) throw await res.text();
@@ -424,10 +429,13 @@ var jsPsychPavlovia = (function (jspsych) {
         }
         // asynchronously query the pavlovia server:
         else {
+            const upParams = new URLSearchParams();
+            upParams.append('key', key);
+            upParams.append('value', value);
+
             return fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key, value })
+                body: upParams
             })
                 .then(async (res) => {
                     if (!res.ok) throw await res.text();
