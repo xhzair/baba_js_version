@@ -101,7 +101,11 @@ var jsPsychDSST = (function () {
         sampleSymbols(n) {
             const out = [];
             for (let i = 0; i < n; i++) {
-                out.push(SYMBOL_LIST[Math.floor(Math.random() * SYMBOL_LIST.length)]);
+                let newSymbol;
+                do {
+                    newSymbol = SYMBOL_LIST[Math.floor(Math.random() * SYMBOL_LIST.length)];
+                } while (i > 0 && newSymbol === out[i - 1]); // avoid consecutive same symbols
+                out.push(newSymbol);
             }
             return out;
         }
@@ -230,32 +234,46 @@ var jsPsychDSST = (function () {
                     this.correctFlags[this.currentIdx] = correct;
                     this.reactionTimes[this.currentIdx] = rt;
                     
-                    // re-render to show feedback
-                    this.showPracticeTrial(display_element);
+                    // show feedback immediately without re-rendering
+                    // Find the current symbol element (the one with 'current' class)
+                    const currentElement = document.querySelector('.dsst-symbol-item.current');
+                    if (currentElement) {
+                        const color = correct ? '#28A745' : '#DC3545';
+                        currentElement.innerHTML = `<div style="font-size:32px; font-weight:bold; color:${color};">${ansDigit}</div>`;
+                    }
                     
                     // short delay before entering next question
                     setTimeout(() => {
                         document.removeEventListener('keydown', handler);
                         this.currentIdx++;
                         this.showPracticeTrial(display_element);
-                    }, 1000); // practice phase gives more time to see feedback
+                    }, 150); // practice phase very short feedback time
                 }
             };
             document.addEventListener('keydown', handler);
         }
 
         startTimer(display_element) {
+            // Remove existing timer if any
+            const existingTimer = document.getElementById('dsst-timer');
+            if (existingTimer) {
+                existingTimer.remove();
+            }
+            
             const timerEl = document.createElement('div');
             timerEl.id = 'dsst-timer';
-            timerEl.style.cssText = 'position:fixed; top:10px; right:20px; font-size:20px; color:white;';
+            timerEl.style.cssText = 'position:fixed; top:10px; right:20px; font-size:20px; color:white; z-index:1000; background:rgba(0,0,0,0.7); padding:5px 10px; border-radius:5px;';
             document.body.appendChild(timerEl);
+            
             const update = () => {
                 const elapsed = (performance.now() - this.startTime) / 1000;
                 const remain = Math.max(0, this.timeLimit - elapsed);
                 timerEl.textContent = `Time: ${remain.toFixed(1)} s`;
                 if (remain <= 0) {
                     clearInterval(this.timerInterval);
-                    document.removeEventListener('keydown', this.keyHandler);
+                    if (this.keyHandler) {
+                        document.removeEventListener('keydown', this.keyHandler);
+                    }
                     this.phase = 'result';
                     this.showNext(this.displayElementRef);
                 }
@@ -267,7 +285,9 @@ var jsPsychDSST = (function () {
             this.displayElementRef = display_element;
             if (this.currentIdx >= this.testCount) {
                 this.phase = 'result';
-                clearInterval(this.timerInterval);
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
                 this.showNext(display_element);
                 return;
             }
@@ -295,15 +315,20 @@ var jsPsychDSST = (function () {
                     this.correctFlags[this.currentIdx] = correct;
                     this.reactionTimes[this.currentIdx] = rt;
                     
-                    // re-render to show feedback
-                    this.showTestTrial(display_element);
+                    // show feedback immediately without re-rendering
+                    // Find the current symbol element (the one with 'current' class)
+                    const currentElement = document.querySelector('.dsst-symbol-item.current');
+                    if (currentElement) {
+                        const color = correct ? '#28A745' : '#DC3545';
+                        currentElement.innerHTML = `<div style="font-size:32px; font-weight:bold; color:${color};">${ansDigit}</div>`;
+                    }
                     
                     // short delay before entering next question
                     setTimeout(() => {
                         document.removeEventListener('keydown', this.keyHandler);
                         this.currentIdx++;
                         this.showTestTrial(display_element);
-                    }, 500); // test
+                    }, 100); // test phase very short feedback time
                 }
             };
             document.addEventListener('keydown', this.keyHandler);
