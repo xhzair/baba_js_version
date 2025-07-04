@@ -15,7 +15,7 @@ body, html {
     width: 100%;
 }
 
-/* 只在游戏页面禁用滚动 */
+/* disable scrolling only in game page */
 .baba-game-active {
     height: 100vh !important;
     overflow: hidden !important;
@@ -44,23 +44,25 @@ body, html {
 /* Game grid */
 .game-grid {
     display: grid;
-    gap: 0px; /* 完全移除间隔 */
-    background-color: #7d7d7d; /* 与背景色相同 */
-    border: none; /* 移除边框 */
+    gap: 0px; /* remove all gaps */
+    background-color: #7d7d7d; /* same as background color */
+    border: none; /* remove border */
     border-radius: 0px;
     padding: 0px;
     margin: 10px;
     max-width: calc(100vw - 40px);
-    max-height: calc(100vh - 160px); /* 为UI元素预留空间 */
+    max-height: calc(100vh - 160px); /* reserve space for UI elements */
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 /* Grid cell */
 .grid-cell {
     width: var(--cell-size, 60px);
     height: var(--cell-size, 60px);
-    background-color: transparent; /* 完全透明 */
+    background-color: transparent; /* completely transparent */
     position: relative;
-    border: none; /* 确保没有边框 */
+    border: none; /* ensure no border */
     margin: 0;
     padding: 0;
 }
@@ -83,27 +85,31 @@ body, html {
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    z-index: 1; /* 默认层级 */
+    z-index: 1; /* default layer */
+    transform: translateZ(0);
+    will-change: transform;
 }
 
-/* 最近移动的对象显示在上层 */
+/* recently moved objects are displayed on top */
 .game-object.recently-moved {
     z-index: 100 !important;
     position: relative !important;
+    transition: all 0.1s ease-out;
+    will-change: transform;
 }
 
-/* 文字对象在推动时也要显示在上层 */
+/* text objects are also displayed on top when pushed */
 .text-object.recently-moved {
     z-index: 101 !important;
     position: relative !important;
 }
 
-/* YOU对象始终在最上层 */
+/* YOU object is always on top */
 .game-object.property-you {
     z-index: 20 !important;
 }
 
-/* YOU文字对象的层级 */
+/* layer for YOU text object */
 .text-object.property-you {
     z-index: 21 !important;
 }
@@ -112,11 +118,14 @@ body, html {
 .game-object.image-object {
     font-size: 0; /* Hide text for image objects */
     color: transparent;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    backface-visibility: hidden;
 }
 
-/* Text objects - 基础样式 */
+/* Text objects - basic style */
 .text-object {
-    /* 移除边框并统一尺寸 */
+    /* remove border and unify size */
     border: none;
     position: absolute;
     top: 0;
@@ -124,44 +133,44 @@ body, html {
     width: 100%;
     height: 100%;
     
-    /* 使用 flex 垂直水平居中 */
+    /* use flex to vertically and horizontally center */
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
     
-    /* 处理换行 */
+    /* handle line breaks */
     white-space: normal;
     overflow: visible;
 }
 
-/* 动态文本对象样式（非图片文本） */
+/* dynamic text object style (non-image text) */
 .text-object:not(.text-image) {
-    background-color: rgba(125, 125, 125, 0.8) !important; /* 与棋盘背景一致但稍微透明 */
-    background-image: none !important; /* 强制不显示背景图片 */
-    color: #fff; /* 默认文字颜色，将被脚本 inline color 覆盖 */
+    background-color: rgba(125, 125, 125, 0.8) !important; /* same as board background but slightly transparent */
+    background-image: none !important; /* force no background image */
+    color: #fff; /* default text color, will be overridden by script inline color */
     font-weight: bold;
-    line-height: 1; /* 行高设为1，避免双行文本撑高 */
-    padding: 0 0 2px 0; /* 底部额外留白避免裁剪 */
-    font-size: 24px; /* 统一字体大小 */
+    line-height: 1; /* set line height to 1, avoid double line text height */
+    padding: 0 0 2px 0; /* bottom extra white space to avoid clipping */
+    font-size: 24px; /* unified font size */
 }
 
-/* 移除了不需要的伪元素 */
+/* removed unnecessary pseudo elements */
 
-/* 单行文本样式（非图片文本） */
+/* single line text style (non-image text) */
 .text-object.single-line:not(.text-image) {
     font-size: 24px;
     line-height: 1;
 }
 
-/* 多行文本样式（非图片文本） */
+/* multi-line text style (non-image text) */
 .text-object.multi-line:not(.text-image) {
-    font-size: 24px; /* 与单行一致，后续自动缩放 */
-    line-height: 0.9; /* 更紧凑的行距让整体高度更高 */
+    font-size: 24px; /* same as single line, will be automatically scaled later */
+    line-height: 0.9; /* more compact line spacing to make overall height higher */
     padding-bottom: 0;
 }
 
-/* Object images - 只应用于实体对象，不影响文本对象 */
+/* Object images - only applied to entity objects, not text objects */
 .image-object.object-apple { background-image: url('../images/apple.png'); }
 .image-object.object-anchor { background-image: url('../images/anchor.png'); }
 .image-object.object-balloon { background-image: url('../images/balloon.png'); }
@@ -205,7 +214,7 @@ body, html {
 .image-object.object-tree { background-image: url('../images/tree.png'); }
 .image-object.object-umbrella { background-image: url('../images/umbrella.png'); }
 
-/* 红色属性效果 - 使用预生成的红色图片 */
+/* red property effect - use pre-generated red images */
 .property-red.image-object.object-apple { background-image: url('../images_red/apple.png') !important; }
 .property-red.image-object.object-anchor { background-image: url('../images_red/anchor.png') !important; }
 .property-red.image-object.object-balloon { background-image: url('../images_red/balloon.png') !important; }
@@ -249,7 +258,7 @@ body, html {
 .property-red.image-object.object-tree { background-image: url('../images_red/tree.png') !important; }
 .property-red.image-object.object-umbrella { background-image: url('../images_red/umbrella.png') !important; }
 
-/* 文字对象的红色属性 */
+/* red property for text objects */
 .property-red.text-object:not(.text-image) {
     background-color: rgb(255, 0, 0) !important;
     color: #fff !important;
@@ -257,7 +266,7 @@ body, html {
 }
 
 .property-red.text-image {
-    /* 文字图片也可以使用红色版本，但这里先保持简单的红色背景 */
+    /* text image can also use red version, but here keep simple red background */
     background-color: rgba(255, 0, 0, 0.8) !important;
 }
 
@@ -489,19 +498,19 @@ body, html {
     font-size: 24px;
 }
 
-/* 文本图片样式 - 确保文本图片正确显示 */
+/* text image style - ensure text image is displayed correctly */
 .text-object.text-image {
     background-color: transparent !important;
-    /* JavaScript会动态设置background-image */
-    background-size: 80% !important; /* 缩小到80%，与实体对象图片大小更协调 */
+    /* JavaScript will dynamically set background-image */
+    background-size: 80% !important; /* shrink to 80%, match entity object image size */
     background-repeat: no-repeat !important;
     background-position: center !important;
-    /* 确保没有文本内容显示 */
+    /* ensure no text content is displayed */
     color: transparent !important;
     font-size: 0 !important;
 }
 
-/* 数字广度测试样式 */
+/* digit span test style */
 .digit-span-container {
     display: flex;
     flex-direction: column;
@@ -614,7 +623,7 @@ body, html {
     display: block;
 }
 
-/* 响应式设计 */
+/* responsive design */
 @media (max-width: 768px) {
     .digit-span-container h1 {
         font-size: 24px;
@@ -639,4 +648,171 @@ body, html {
         padding: 12px 24px;
         font-size: 16px;
     }
+}
+
+/* performance optimization related styles */
+
+/* reduce repaint */
+.game-container {
+    contain: layout style paint;
+}
+
+/* loading state style */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: white;
+    font-size: 24px;
+    background-color: #2c2c2c;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Cognitive Tasks Styles */
+
+/* Container styles for cognitive tasks */
+.digit-span-container,
+.dsst-container{
+    box-sizing:border-box;
+    width:100%;
+    max-width:none;
+    padding:40px 20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    background-color:#7d7d7d;
+    font-family:'Verdana', Arial, sans-serif;
+} 
+
+ 
+
+/* DSST RSVP style */
+.dsst-rsvp-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin: 40px 0;
+    min-height: 120px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.dsst-symbol-item {
+    text-align: center;
+    width: 80px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.dsst-symbol-item:hover {
+    transform: scale(1.05);
+}
+
+.dsst-symbol-image {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border: 2px solid #fff;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.dsst-symbol-image:hover {
+    border-color: #4CAF50;
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.dsst-answer-display {
+    font-size: 24px;
+    font-weight: bold;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    padding: 5px;
+    transition: all 0.3s ease;
+}
+
+.dsst-answer-correct {
+    color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
+    border: 2px solid #4CAF50;
+}
+
+.dsst-answer-incorrect {
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.1);
+    border: 2px solid #f44336;
+}
+
+.dsst-answer-pending {
+    color: #666;
+    border: 2px solid transparent;
+}
+
+/* DSST animation effects */
+@keyframes symbolSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes symbolSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+}
+
+.dsst-symbol-item.new {
+    animation: symbolSlideIn 0.3s ease-out;
+}
+
+.dsst-symbol-item.removing {
+    animation: symbolSlideOut 0.3s ease-in;
+}
+
+/* highlight current symbol to answer */
+.dsst-symbol-item.current {
+    border: 2px solid #FFD700;
+    border-radius: 8px;
+    padding: 5px;
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.dsst-symbol-item.current .dsst-symbol-image {
+    border-color: #FFD700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }

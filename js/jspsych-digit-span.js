@@ -54,8 +54,8 @@ var jsPsychDigitSpan = (function() {
                 let testFinished = false;
                 let keyHandler = null;
                 let audioCache = {};
-                let trials = []; // 将trials移到函数作用域内
-                let startTime = Date.now(); // 添加startTime变量
+                let trials = []; // move trials to function scope
+                let startTime = Date.now(); // add startTime variable
 
             // load audio
             async function loadAudio() {
@@ -95,9 +95,6 @@ var jsPsychDigitSpan = (function() {
                             </span>
                         </p>
                         <div style="background:linear-gradient(135deg, #ff6b6b, #ffd93d); padding:20px; border-radius:15px; margin:30px 0; border:3px solid #fff;">
-                            <p style="font-size:22px;color:#fff;font-weight:bold;margin:0;text-shadow:2px 2px 4px rgba(0,0,0,0.3);">
-                                🔊 <span style="color:#fff;font-weight:bold;">请确保打开扬声器或戴上耳机！</span>
-                            </p>
                             <p style="font-size:18px;color:#fff;margin:10px 0 0 0;font-weight:bold;">
                                 🔊 Please make sure your speakers are on or headphones are connected!
                             </p>
@@ -270,7 +267,7 @@ var jsPsychDigitSpan = (function() {
                     consecutive_errors_before: consecutiveErrors,
                     timestamp: Date.now()
                 };
-                trials.push(trialDetail); // 使用局部变量trials
+                trials.push(trialDetail); // use local variable trials
                 
                 if (shouldEndTask(correct)) {
                     finishTest();
@@ -304,19 +301,19 @@ var jsPsychDigitSpan = (function() {
                 testFinished = true;
                 document.removeEventListener('keydown', keyHandler);
                 const maxLength = Math.max(...results.correct.map((c, i) => c ? results.lengths[i] : 0));
-                const correctCount = results.correct.filter(Boolean).length; // 计算正确数量
+                const correctCount = results.correct.filter(Boolean).length; // calculate correct count
                 const trialData = {
                     participant_id: trial.participant_id,
                     task_version: '1.0.0',
                     mode: trial.mode, // 'forward' or 'backward'
-                    max_span: maxLength, // 使用计算出的最大广度
+                    max_span: maxLength, // use calculated max span
                     total_correct: correctCount,
                     total_trials: totalTrialsCompleted,
                     consecutive_errors: consecutiveErrors,
-                    trials: trials, // 使用局部变量trials
+                    trials: trials, // use local variable trials
                     response_times: results.reaction_times,
                     consecutive_errors_count: consecutiveErrors,
-                    task_completion_time: (Date.now() - startTime) / 1000, // 使用局部变量startTime
+                    task_completion_time: (Date.now() - startTime) / 1000, // use local variable startTime
                     audio_used: trial.use_audio || false,
                     digit_duration: trial.digit_duration || 1.0
                 };

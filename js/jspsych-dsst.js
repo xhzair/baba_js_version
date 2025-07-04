@@ -77,6 +77,12 @@ var jsPsychDSST = (function () {
                 this.keyHandler = null;
                 this.timerInterval = null;
                 this.startTime = null;
+                
+                // RSVP states
+                this.displayedSymbols = []; // current displayed symbols
+                this.symbolAnswers = []; // answers for corresponding symbols
+                this.symbolCorrectFlags = []; // correctness for corresponding symbols
+                this.maxDisplayed = 9; // max displayed symbols
 
                 // begin
                 this.showNext(display_element, trial);
@@ -110,13 +116,16 @@ var jsPsychDSST = (function () {
             switch (this.phase) {
                 case 'inst1':
                     this.renderInstructions(display_element, 'Digit–Symbol Substitution Task',
-                        `<p>You will first complete <strong>${this.practiceCount}</strong> practice trials.</p><p>For each symbol shown, press the corresponding digit key <strong>(1-9)</strong> as fast and accurately as possible.</p>`,
+                        `<p>You will first complete <strong>${this.practiceCount}</strong> practice trials.</p><p>Symbols will appear from left to right. Press the corresponding digit key <strong>(1-9)</strong> for each symbol as fast and accurately as possible.</p><p>After answering, the symbol will show the correct digit and color feedback.</p>`,
                         () => {
                             this.phase = 'practice';
                             this.currentIdx = 0;
                             this.answers = new Array(this.practiceCount).fill(null);
                             this.correctFlags = new Array(this.practiceCount).fill(false);
                             this.reactionTimes = new Array(this.practiceCount).fill(null);
+                            this.displayedSymbols = [];
+                            this.symbolAnswers = [];
+                            this.symbolCorrectFlags = [];
                             this.showPracticeTrial(display_element);
                         });
                     break;
@@ -129,6 +138,9 @@ var jsPsychDSST = (function () {
                             this.answers = new Array(this.testCount).fill(null);
                             this.correctFlags = new Array(this.testCount).fill(false);
                             this.reactionTimes = new Array(this.testCount).fill(null);
+                            this.displayedSymbols = [];
+                            this.symbolAnswers = [];
+                            this.symbolCorrectFlags = [];
                             this.startTime = performance.now();
                             this.startTimer(display_element);
                             this.showTestTrial(display_element);
@@ -163,44 +175,99 @@ var jsPsychDSST = (function () {
             return table;
         }
 
+        // add new symbol to display sequence
+        addSymbolToDisplay(symbol) {
+            this.displayedSymbols.push(symbol);
+            this.symbolAnswers.push(null);
+            this.symbolCorrectFlags.push(null);
+            
+            // if exceeds max displayed, remove the leftmost symbol
+            if (this.displayedSymbols.length > this.maxDisplayed) {
+                this.displayedSymbols.shift();
+                this.symbolAnswers.shift();
+                this.symbolCorrectFlags.shift();
+            }
+        }
+
+        // render RSVP display area
+        renderRSVPDisplay() {
+            let html = '<div class="dsst-rsvp-container">';
+            
+            for (let i = 0; i < this.displayedSymbols.length; i++) {
+                const symbol = this.displayedSymbols[i];
+                const answer = this.symbolAnswers[i];
+                const correct = this.symbolCorrectFlags[i];
+                const isCurrent = i === 0 && answer === null; // leftmost and unanswered symbol
+                
+                html += `<div class="dsst-symbol-item${isCurrent ? ' current' : ''}">`;
+                
+                // symbol image
+                html += `<img src="dsst symbol/${symbol}" class="dsst-symbol-image">`;
+                
+                // answer display area
+                if (answer !== null) {
+                    const answerClass = correct ? 'dsst-answer-correct' : 'dsst-answer-incorrect';
+                    html += `<div class="dsst-answer-display ${answerClass}">${answer}</div>`;
+                } else {
+                    html += `<div class="dsst-answer-display dsst-answer-pending">?</div>`;
+                }
+                
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
         showPracticeTrial(display_element) {
             if (this.currentIdx >= this.practiceCount) {
                 this.phase = 'inst2';
                 this.showNext(display_element);
                 return;
             }
+            
+            // add new symbol to display sequence
             const symbol = this.practiceSeq[this.currentIdx];
+            this.addSymbolToDisplay(symbol);
+            
             const html = `
                 <div class="dsst-container">
                     ${this.showPairTable()}
-                    <div style="margin-top:40px; text-align:center;">
-                        <img src="dsst symbol/${symbol}" style="width:100px; height:100px; border:4px solid #fff; background:#fff; padding:10px; box-sizing:border-box;">
-                        <p style="color:white; font-size:18px; margin-top:20px;">Press the corresponding digit (1-9)</p>
+                    ${this.renderRSVPDisplay()}
+                    <div style="text-align:center; margin-top:20px;">
+                        <p style="color:white; font-size:18px;">Press the corresponding digit (1-9) for the leftmost symbol</p>
                     </div>
-                    <div id="feedback-display" style="margin-top:20px; text-align:center; min-height:60px;"></div>
-                    <div id="feedback-message" style="margin-top:10px; text-align:center; font-size:16px; min-height:30px;"></div>
                     <p style="color:white; margin-top:30px;">Practice ${this.currentIdx + 1} / ${this.practiceCount}</p>
                 </div>`;
             display_element.innerHTML = html;
+            
             const start = performance.now();
             const handler = (e) => {
                 if (e.key >= '1' && e.key <= '9') {
                     const rt = performance.now() - start;
                     const ansDigit = parseInt(e.key);
+                    
+                    // 记录答案
                     this.answers[this.currentIdx] = ansDigit;
                     const correct = DIGIT_SYMBOL_MAP[ansDigit] === symbol;
                     this.correctFlags[this.currentIdx] = correct;
                     this.reactionTimes[this.currentIdx] = rt;
                     
-                    // 显示反馈
-                    this.showFeedback(display_element, ansDigit, correct);
+                    // update answers in display sequence
+                    if (this.symbolAnswers.length > 0) {
+                        this.symbolAnswers[0] = ansDigit;
+                        this.symbolCorrectFlags[0] = correct;
+                    }
                     
-                    // 延迟后进入下一个试次
+                    // re-render display
+                    this.showPracticeTrial(display_element);
+                    
+                    // enter next trial after short delay
                     setTimeout(() => {
                         document.removeEventListener('keydown', handler);
                         this.currentIdx++;
                         this.showPracticeTrial(display_element);
-                    }, 800); // 显示反馈800毫秒
+                    }, 500); // reduce delay time
                 }
             };
             document.addEventListener('keydown', handler);
@@ -233,66 +300,51 @@ var jsPsychDSST = (function () {
                 this.showNext(display_element);
                 return;
             }
+            
+            // add new symbol to display sequence
             const symbol = this.testSeq[this.currentIdx];
+            this.addSymbolToDisplay(symbol);
+            
             const html = `
                 <div class="dsst-container">
                     ${this.showPairTable()}
-                    <div style="margin-top:30px; text-align:center;">
-                        <img src="dsst symbol/${symbol}" style="width:110px; height:110px; border:4px solid #fff; background:#fff; padding:10px; box-sizing:border-box;">
-                        <p style="color:white; font-size:20px; margin-top:20px;">Digit?</p>
+                    ${this.renderRSVPDisplay()}
+                    <div style="text-align:center; margin-top:20px;">
+                        <p style="color:white; font-size:20px;">Press the corresponding digit (1-9) for the leftmost symbol</p>
                     </div>
-                    <div id="feedback-display" style="margin-top:20px; text-align:center; min-height:60px;"></div>
-                    <div id="feedback-message" style="margin-top:10px; text-align:center; font-size:16px; min-height:30px;"></div>
-                    <!-- progress hidden -->
                 </div>`;
             display_element.innerHTML = html;
+            
             const start = performance.now();
             this.keyHandler = (e) => {
                 if (e.key >= '1' && e.key <= '9') {
                     const rt = performance.now() - start;
                     const ansDigit = parseInt(e.key);
+                    
+                    // record answer
                     this.answers[this.currentIdx] = ansDigit;
                     const correct = DIGIT_SYMBOL_MAP[ansDigit] === symbol;
                     this.correctFlags[this.currentIdx] = correct;
                     this.reactionTimes[this.currentIdx] = rt;
                     
-                    // 显示反馈
-                    this.showFeedback(display_element, ansDigit, correct);
+                    // update answers in display sequence
+                    if (this.symbolAnswers.length > 0) {
+                        this.symbolAnswers[0] = ansDigit;
+                        this.symbolCorrectFlags[0] = correct;
+                    }
                     
-                    // 延迟后进入下一个试次
+                    // re-render display
+                    this.showTestTrial(display_element);
+                    
+                    // enter next trial after short delay
                     setTimeout(() => {
                         document.removeEventListener('keydown', this.keyHandler);
                         this.currentIdx++;
                         this.showTestTrial(display_element);
-                    }, 800); // 显示反馈800毫秒
+                    }, 500); // reduce delay time
                 }
             };
             document.addEventListener('keydown', this.keyHandler);
-        }
-        
-        showFeedback(display_element, inputDigit, correct) {
-            const feedbackDisplay = document.getElementById('feedback-display');
-            const feedbackMessage = document.getElementById('feedback-message');
-            
-            if (feedbackDisplay && feedbackMessage) {
-                // 显示输入的数字
-                feedbackDisplay.innerHTML = `
-                    <span style="font-size:32px; font-weight:bold; color:${correct ? '#4CAF50' : '#f44336'};">
-                        ${inputDigit}
-                    </span>
-                `;
-                
-                // 显示反馈信息
-                if (correct) {
-                    feedbackMessage.innerHTML = `
-                        <span style="color:#4CAF50; font-weight:bold;">✓ 正确！</span>
-                    `;
-                } else {
-                    feedbackMessage.innerHTML = `
-                        <span style="color:#f44336; font-weight:bold;">✗ 错误</span>
-                    `;
-                }
-            }
         }
 
         showResult(display_element) {

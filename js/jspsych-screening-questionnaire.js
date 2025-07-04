@@ -72,7 +72,7 @@ var jsPsychScreeningQuestionnaire = (function(){
                 if (ev.target && ev.target.name === 'game') {
                     if (ev.target.checked) {
                         if (ev.target.value === 'none_of_above') {
-                            // 如果选择了"None of the above"，取消所有其他选项
+                            // if "None of the above" is selected, cancel all other options
                             selectedGames = ['none_of_above'];
                             games.forEach((game, i) => {
                                 if (game.value !== 'none_of_above') {
@@ -81,7 +81,7 @@ var jsPsychScreeningQuestionnaire = (function(){
                                 }
                             });
                         } else {
-                            // 如果选择了其他游戏，取消"None of the above"选项
+                            // if other games are selected, cancel "None of the above" option
                             selectedGames = selectedGames.filter(game => game !== 'none_of_above');
                             const noneCheckbox = document.getElementById(`game_${games.length - 1}`);
                             if (noneCheckbox) noneCheckbox.checked = false;

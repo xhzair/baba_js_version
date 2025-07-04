@@ -1,6 +1,5 @@
 /**
  * Baba is You Game Engine - JavaScript Implementation
- * 基于原版Python game_engine.py的JavaScript转换
  */
 
 class GameObject {

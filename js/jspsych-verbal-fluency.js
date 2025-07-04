@@ -152,7 +152,7 @@ var jsPsychVerbalFluency = (function(){
                 <h2 style='color:#3ca5ff;'>${this.testCategory}</h2>
                 <div id='vf-timer' style='color:#ff4444;font-size:24px;margin-top:10px;'>Time left: ${this.timeLimit.toFixed(1)} s</div>
                 <textarea id='vf-test-input' placeholder='Please enter directly' style='width:80vw;max-width:1000px;min-width:400px;height:220px;margin-top:30px;font-size:18px;'></textarea>
-                <p id='vf-test-hint' style='color:#cccccc;margin-top:8px;'>Please enter ${this.testCategory.toLowerCase()} names separated by commas (e.g., cat, dog, bird)</p>
+                <p id='vf-test-hint' style='color:#cccccc;margin-top:8px;'>Please enter ${this.testCategory.toLowerCase()} names separated by commas (e.g., animal1, animal2, animal3)</p>
                 <p id='vf-test-warning' style='color:#ff6b6b;margin-top:8px;font-size:20px;display:none;'>⚠️ Please use commas to separate the names!</p>
                 <div style='color:#cccccc;margin-top:20px;font-size:20px;'>The test will automatically submit when time is up.</div>
             </div>`;
@@ -239,23 +239,23 @@ var jsPsychVerbalFluency = (function(){
                 const hasComma = trimmedText.includes(',');
                 
                 // check if there are multiple words but no comma separation
-                // 更精确的检测：检查是否有空格分隔的多个单词
+                // more precise detection: check if there are multiple words separated by spaces
                 const words = trimmedText.split(/\s+/).filter(word => word.length > 0);
                 const hasMultipleWords = words.length > 1;
                 
-                // 检查最后一个字符是否是逗号（避免误报）
+                // check if the last character is a comma (to avoid false positives)
                 const endsWithComma = trimmedText.endsWith(',');
                 
                 if (hasMultipleWords && !hasComma && !endsWithComma) {
-                    // show warning - 有多个单词但没有逗号分隔
+                    // show warning - there are multiple words but no comma separation
                     warningEl.style.display = 'block';
                     hintEl.style.display = 'none';
                 } else if (hasComma || !hasMultipleWords) {
-                    // hide warning, show hint - 有逗号或只有一个单词
+                    // hide warning, show hint - there is a comma or only one word
                     warningEl.style.display = 'none';
                     hintEl.style.display = 'block';
                 } else {
-                    // 其他情况，显示提示
+                    // other cases, show hint
                     warningEl.style.display = 'none';
                     hintEl.style.display = 'block';
                 }

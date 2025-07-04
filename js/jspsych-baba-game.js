@@ -116,16 +116,117 @@ var jsPsychBabaGame = (function () {
             this.pauseCount = 0;
             this.currentTrial = null;
             this.keyHandler = null;
-            }
+            this.imageCache = {};
+            this.imagesLoaded = false;
+        }
         
+        async preloadImages() {
+            // 基础图片 - 所有关卡都需要
+            const baseImagePaths = [
+                // 文本图片
+                'text_images/you.png', 'text_images/is.png', 'text_images/win.png', 'text_images/stop.png',
+                'text_images/push.png', 'text_images/defeat.png', 'text_images/red.png', 'text_images/destruct.png',
+                'text_images/impact.png', 'text_images/shut.png', 'text_images/open.png',
+                
+                // 核心对象图片
+                'images/pumpkin.png', 'images/sun.png', 'images/cloud.png', 'images/dice.png'
+            ];
+            
+            // determine additional images needed for current level
+            const additionalImagePaths = this.getRequiredImagesForLevel();
+            
+            const allImagePaths = [...baseImagePaths, ...additionalImagePaths];
+            console.log(`Preloading ${allImagePaths.length} images (${baseImagePaths.length} base + ${additionalImagePaths.length} level-specific)...`);
+            
+            const loadPromises = allImagePaths.map(path => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.imageCache[path] = img;
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        console.warn(`Failed to load image: ${path}`);
+                        resolve(); // continue loading other images
+                    };
+                    img.src = path;
+                });
+            });
+            
+            await Promise.all(loadPromises);
+            this.imagesLoaded = true;
+            console.log(`Successfully preloaded ${Object.keys(this.imageCache).length} images`);
+        }
+        
+        getRequiredImagesForLevel() {
+            if (!this.currentTrial?.level_data?.level_id) {
+                return [];
+            }
+            
+            const levelId = this.currentTrial.level_data.level_id;
+            const requiredImages = [];
+            
+            // determine additional images needed for current level
+            switch (levelId) {
+                case 'journey_environment':
+                    // need POOL or BALLOON as boundary objects
+                    requiredImages.push('images/pool.png', 'images/balloon.png');
+                    break;
+                    
+                case 'journey_understandproperty':
+                    // need BOMB as destruct object
+                    requiredImages.push('images/bomb.png');
+                    break;
+                    
+                case 'journey_switchidentity':
+                    // need CHAIN and ANCHOR/FAN
+                    requiredImages.push('images/chain.png', 'images/anchor.png', 'images/fan.png');
+                    break;
+                    
+                case 'journey_combination':
+                    // need DOOR/KEY or TREE/ROSE
+                    requiredImages.push('images/door.png', 'images/key.png', 'images/tree.png', 'images/rose.png');
+                    break;
+                    
+                case 'journey_break':
+                    // need BOMB or CANDLE
+                    requiredImages.push('images/bomb.png', 'images/candle.png');
+                    break;
+                    
+                case 'journey_grammar':
+                    // only need base images, no additional objects
+                    break;
+                    
+                default:
+                    // for unknown levels, load all possible images
+                    requiredImages.push('images/bomb.png', 'images/chain.png', 'images/anchor.png', 
+                                     'images/door.png', 'images/key.png', 'images/tree.png', 'images/rose.png',
+                                     'images/fan.png', 'images/candle.png', 'images/pool.png', 'images/balloon.png');
+            }
+            
+            return requiredImages;
+        }
 
-
-        trial(display_element, trial) {
+        async trial(display_element, trial) {
             // save trial parameters
             this.currentTrial = trial;
 
             // disable page scrolling when game starts
             document.body.classList.add('baba-game-active');
+
+            // show loading message
+            display_element.innerHTML = `
+                <div class="loading-container">
+                    <div style="text-align: center;">
+                        <div class="loading-spinner"></div>
+                        <div>Loading game assets...</div>
+                        <div style="margin-top: 20px; font-size: 18px;">Please wait...</div>
+                    </div>
+                </div>
+            `;
+
+            // preload images before starting the game
+            await this.preloadImages();
 
             // initialize game engine
             this.gameEngine = new BabaGameEngine(trial.level_data, trial.time_limit);
@@ -182,7 +283,7 @@ var jsPsychBabaGame = (function () {
             
             display_element.innerHTML = html;
             
-            // 创建游戏网格
+            // create game grid
             this.createGameGrid();
         }
 
@@ -241,7 +342,10 @@ var jsPsychBabaGame = (function () {
         }
 
         updateDisplay() {
-            // clear all cells
+            // use DocumentFragment to batch update DOM, improve performance
+            const fragment = document.createDocumentFragment();
+            
+            // clear all cells efficiently
             for (let y = 0; y < this.gameEngine.gridSize[1]; y++) {
                 for (let x = 0; x < this.gameEngine.gridSize[0]; x++) {
                     this.gridCells[y][x].innerHTML = '';
@@ -249,19 +353,19 @@ var jsPsychBabaGame = (function () {
             }
             
             // render objects in the correct order
-            // 1. first render all non-text objects (entity objects)
+            // 1. first render all non-text objects (entity objects) - non-text objects
             const nonTextObjects = this.gameEngine.objects.filter(obj => !obj.isText);
             for (const obj of nonTextObjects) {
                 this.renderObject(obj);
             }
             
-            // 2. then render all text objects (ensure text is on top)
+            // 2. then render all text objects (ensure text is on top) - text objects
             const textObjects = this.gameEngine.objects.filter(obj => obj.isText);
             for (const obj of textObjects) {
                 this.renderObject(obj);
             }
             
-            // 3. finally render recently moved objects, ensure they are on top
+            // 3. finally render recently moved objects, ensure they are on top - recently moved objects
             for (const obj of this.gameEngine.recentlyMovedObjects) {
                 // first remove existing elements (avoid duplicates)
                 const [x, y] = obj.position;
@@ -309,28 +413,22 @@ var jsPsychBabaGame = (function () {
                     // use pre-generated text images
                     const imagePath = `text_images/${textContent.toLowerCase()}.png`;
                     
-                    objectElement.style.backgroundImage = `url('${imagePath}')`;
-                    objectElement.style.backgroundSize = 'contain';
-                    objectElement.style.backgroundRepeat = 'no-repeat';
-                    objectElement.style.backgroundPosition = 'center';
-                    objectElement.style.backgroundColor = 'transparent';
-                    objectElement.textContent = ''; // hide text, only show image
-                    
-                    // add error handling, if image loading fails, show text
-                    const img = new Image();
-                    img.onload = () => {
-                        // image loaded successfully, keep image displayed
-                    };
-                    img.onerror = () => {
-                        // image loading failed, revert to text display
-                        console.warn(`Text image loading failed: ${imagePath}`);
+                    // use cached image if available
+                    if (this.imageCache[imagePath]) {
+                        objectElement.style.backgroundImage = `url('${imagePath}')`;
+                        objectElement.style.backgroundSize = 'contain';
+                        objectElement.style.backgroundRepeat = 'no-repeat';
+                        objectElement.style.backgroundPosition = 'center';
+                        objectElement.style.backgroundColor = 'transparent';
+                        objectElement.textContent = ''; // hide text, only show image
+                    } else {
+                        // fallback to text display if image not cached
                         objectElement.style.backgroundImage = 'none';
                         objectElement.textContent = textContent;
                         objectElement.style.color = 'white';
                         objectElement.style.fontSize = '12px';
                         objectElement.style.fontWeight = 'bold';
-                    };
-                    img.src = imagePath;
+                    }
                 } else {
                     // entity object: use image to display
                     objectElement.classList.add('image-object');
@@ -488,7 +586,8 @@ var jsPsychBabaGame = (function () {
                 } else if (this.gameEngine.checkWinCondition()) {
                     this.endGame(true, 'completed');
                 } else {
-                    requestAnimationFrame(() => this.gameLoop());
+                    // use setTimeout to limit frame rate, improve performance
+                    setTimeout(() => requestAnimationFrame(() => this.gameLoop()), 16); // ~60 FPS
                 }
             }
         }
@@ -555,7 +654,7 @@ var jsPsychBabaGame = (function () {
                 overlay.appendChild(messageBox);
                 document.body.appendChild(overlay);
                 
-                // Auto-hide after 5 seconds
+                // auto-hide after 5 seconds
                 this.defeatAutoHideTimer = setTimeout(() => {
                     this.hideDefeatMessage();
                 }, 1000);
@@ -592,7 +691,7 @@ var jsPsychBabaGame = (function () {
                     document.removeEventListener('keydown', this.defeatKeyHandler);
                     this.defeatKeyHandler = null;
                 }
-                // Clear auto-hide timer
+                // clear auto-hide timer
                 if (this.defeatAutoHideTimer) {
                     clearTimeout(this.defeatAutoHideTimer);
                     this.defeatAutoHideTimer = null;
@@ -614,7 +713,7 @@ var jsPsychBabaGame = (function () {
             // collect detailed data from game engine
             const detailedData = this.gameEngine.getDetailedData();
             
-            // Calculate average time between moves
+            // calculate average time between moves
             let averageTimeBetweenMoves = 0;
             if (detailedData.move_timestamps.length > 1) {
                 const moveIntervals = detailedData.move_timestamps
@@ -639,7 +738,7 @@ var jsPsychBabaGame = (function () {
                 remaining_time: this.gameEngine.getRemainingTime(),
                 operation_count: this.gameEngine.operationCount || 0,
                 average_time_between_moves_ms: averageTimeBetweenMoves,
-                // Detailed process data
+                // detailed process data
                 move_timestamps: detailedData.move_timestamps,
                 operation_analyses: detailedData.operation_analyses,
                 rule_operation_stats: detailedData.rule_operation_stats,

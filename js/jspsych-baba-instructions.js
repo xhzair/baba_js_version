@@ -1,6 +1,6 @@
 /**
  * jsPsych Baba Instructions Plugin
- * 显示游戏说明和教程
+ * display game instructions and tutorial
  */
 
 var jsPsychBabaInstructions = (function () {
@@ -51,7 +51,7 @@ var jsPsychBabaInstructions = (function () {
         trial(display_element, trial) {
             const startTime = Date.now();
             
-            // 创建说明页面
+            // create instructions page
             const html = `
                 <div class="instructions-container">
                     <h1 class="instructions-title">${trial.title}</h1>
@@ -70,7 +70,7 @@ var jsPsychBabaInstructions = (function () {
             
             display_element.innerHTML = html;
             
-            // 设置继续按钮事件
+            // set continue button event
             document.getElementById('continue-btn').addEventListener('click', () => {
                 const endTime = Date.now();
                 const data = {
@@ -79,7 +79,7 @@ var jsPsychBabaInstructions = (function () {
                 this.jsPsych.finishTrial(data);
             });
             
-            // 也允许按键继续
+            // also allow key press to continue
             const keyHandler = (event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                     document.getElementById('continue-btn').click();
@@ -89,7 +89,7 @@ var jsPsychBabaInstructions = (function () {
             
             document.addEventListener('keydown', keyHandler);
             
-            // 清理函数
+            // cleanup function
             this.jsPsych.pluginAPI.setTimeout(() => {
                 document.removeEventListener('keydown', keyHandler);
             }, 0);

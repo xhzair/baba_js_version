@@ -1,6 +1,6 @@
 /**
  * jsPsych Chapter Select Plugin
- * 章节和关卡选择界面
+ * select chapter and level
  */
 
 var jsPsychChapterSelect = (function () {
@@ -251,14 +251,14 @@ var jsPsychChapterSelect = (function () {
         }
 
         isChapterCompleted(chapter, index) {
-            // For demo purposes, assume first chapter can be completed
-            // In real implementation, this would check actual completion status
+            // for demo purposes, assume first chapter can be completed
+            // in real implementation, this would check actual completion status
             return false;
         }
 
         isChapterLocked(chapter, index) {
             if (typeof chapter.locked !== 'undefined') return chapter.locked;
-            // 默认：除教程外均锁定
+            // default: all chapters except tutorial are locked
             return index > 0;
         }
     }
