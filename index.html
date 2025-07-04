@@ -140,27 +140,27 @@
     
     <!-- Custom questionnaire utilities -->
     <script>
-        // 监控全屏状态
+        // watch fullscreen status
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
         document.addEventListener('mozfullscreenchange', handleFullscreenChange);
         document.addEventListener('MSFullscreenChange', handleFullscreenChange);
         
-        // 统一判定是否处于全屏
+        // check if in fullscreen
         function isInFullScreen() {
             return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
         }
 
         function handleFullscreenChange() {
             if (!isInFullScreen() && window.experimentStarted && !window.fullscreenViolation) {
-                window.fullscreenViolation = true; // 防止多次触发
+                window.fullscreenViolation = true; // prevent multiple triggers
 
-                // 终止 jsPsych（若已初始化）
+                // abort jsPsych (if initialized)
                 if (typeof jsPsych !== 'undefined' && jsPsych?.abortExperiment) {
                     jsPsych.abortExperiment('Participant exited fullscreen');
                 }
 
-                // 创建覆盖层提示
+                // create overlay prompt
                 const overlay = document.createElement('div');
                 overlay.id = 'fullscreen-exit-overlay';
                 overlay.style.cssText = `
@@ -186,7 +186,7 @@
                 `;
                 document.body.appendChild(overlay);
 
-                // try to close window after 3 seconds; if failed, refresh page
+                // try to close window after 3 seconds; if failed, refresh page to blank page
                 let remaining = 3;
                 const timer = setInterval(() => {
                     remaining--;
@@ -196,7 +196,6 @@
                         clearInterval(timer);
                         try {
                             window.close();
-                            // if browser prevents closing, refresh to blank page
                             setTimeout(() => location.href = 'about:blank', 100);
                         } catch (e) {
                             location.href = 'about:blank';
@@ -206,17 +205,17 @@
             }
         }
         
-        // Add fullscreen guidance and control after original jsPsych initialization
+        // add fullscreen guidance and control after original jsPsych initialization
         const originalJsPsych = initJsPsych;
         initJsPsych = function(options) {
             const jsPsych = originalJsPsych(options);
             
-            // Save original run method
+            // save original run method
             const originalRun = jsPsych.run;
             
-            // Override run method to add fullscreen guidance before starting
+            // override run method to add fullscreen guidance before starting
             jsPsych.run = function(timeline) {
-                // Create fullscreen instruction trial
+                // create fullscreen instruction trial
                 const fullscreenInstructions = {
                     type: jsPsychHtmlButtonResponse,
                     stimulus: `
@@ -235,12 +234,12 @@
                     `,
                     choices: ['Enter Fullscreen'],
                     on_finish: function() {
-                        // Mark experiment as started
+                        // mark experiment as started
                         window.experimentStarted = true;
                     }
                 };
                 
-                // Create fullscreen switch trial
+                // create fullscreen switch trial
                 const enterFullscreen = {
                     type: jsPsychFullscreen,
                     fullscreen_mode: true,
@@ -728,7 +727,7 @@
                         }
                     });
                 } else if (question.id === 29 || question.id === 32) {
-                    // 自定义数字输入验证（年龄相关问题）
+                    // custom number input validation (age related questions)
                     let promptHtml = '';
                     if (question.prompt) {
                         promptHtml = `<div class="question-prompt">${question.prompt}</div>`;
@@ -774,14 +773,14 @@
                                     if (question.id === 29) {
                                         valid = num >= 18 && num <= 100;
                                     } else {
-                                        valid = true; // 主观年龄仅需数字
+                                        valid = true; // subjective age only needs numbers
                                     }
                                 }
                                 if (valid) {
                                     validationDiv.style.display = 'none';
                                     nextBtn.disabled = false;
                                 } else {
-                                    validationDiv.textContent = question.id === 29 ? '请输入 18-100 之间的数字' : '请输入数字';
+                                    validationDiv.textContent = question.id === 29 ? 'Please enter a number between 18 and 100' : 'Please enter a number';
                                     validationDiv.style.display = 'block';
                                     nextBtn.disabled = true;
                                 }

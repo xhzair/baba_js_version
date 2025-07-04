@@ -65,7 +65,7 @@ var jsPsychQuestionnaire = (function(){
             // start showing first question
             this.showQuestion(display_element);
 
-            // 返回一个 Promise，只有在 finish() 调用时 resolve，才能让 jsPsych 等待问卷完成
+            // return a Promise, so that jsPsych can wait for the questionnaire to finish
             return new Promise(resolve => {
                 this._resolveFinish = resolve;
             });
@@ -357,7 +357,7 @@ var jsPsychQuestionnaire = (function(){
                 completion_time: new Date().toISOString()
             });
 
-            // 触发 trial 返回的 Promise 完成
+            // if trial returns a Promise, resolve it
             if (this._resolveFinish) {
                 this._resolveFinish();
             }

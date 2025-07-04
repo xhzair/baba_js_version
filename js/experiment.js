@@ -635,7 +635,7 @@ class ExperimentController {
         const allData = jsPsych.data.get();
         
         // 判断实验是否正常完成：只要问卷 trial 至少出现一次即可认为完成
-        const questionnaireTrialCount = allData.filterCustom(d => d.trial_type && d.trial_type.startsWith('questionnaire')).count();
+        const questionnaireTrialCount = allData.filterCustom(d => ('questionId' in d) || ('question_id' in d)).count();
         const isNormalCompletion = questionnaireTrialCount > 0;
         
         console.log('Experiment completion check:', {
@@ -694,7 +694,7 @@ class ExperimentController {
         const autData = allData.filter(data => data.trial_type === 'aut').values();
         
         // Questionnaire data - Only include true questionnaire data
-        const questionnaireData = allData.filterCustom(d => d.trial_type && d.trial_type.startsWith('questionnaire')).values();
+        const questionnaireData = allData.filterCustom(d => ('questionId' in d) || ('question_id' in d)).values();
         
         // Remove duplicates by trial_index and ensure only task-specific data
         const removeDuplicates = (dataArray, taskType) => {
@@ -725,7 +725,7 @@ class ExperimentController {
         const deduplicatedDsstData = removeDuplicates(dsstData, 'dsst');
         const deduplicatedVerbalFluencyData = removeDuplicates(verbalFluencyData, 'verbal-fluency');
         const deduplicatedAutData = removeDuplicates(autData, 'aut');
-        const deduplicatedQuestionnaireData = questionnaireData; // 已全部为问卷数据，无需再按 trial_type 过滤
+        const deduplicatedQuestionnaireData = questionnaireData; // 全部为问卷数据
         
         // Collect player feedback data
         const playerFeedbackData = allData.filter({trial_type: 'player_feedback'}).values();
