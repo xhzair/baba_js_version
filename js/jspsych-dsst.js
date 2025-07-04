@@ -77,12 +77,6 @@ var jsPsychDSST = (function () {
                 this.keyHandler = null;
                 this.timerInterval = null;
                 this.startTime = null;
-                
-                // RSVP states
-                this.displayedSymbols = []; // current displayed symbols
-                this.symbolAnswers = []; // answers for corresponding symbols
-                this.symbolCorrectFlags = []; // correctness for corresponding symbols
-                this.maxDisplayed = 9; // max displayed symbols
 
                 // begin
                 this.showNext(display_element, trial);
@@ -123,9 +117,6 @@ var jsPsychDSST = (function () {
                             this.answers = new Array(this.practiceCount).fill(null);
                             this.correctFlags = new Array(this.practiceCount).fill(false);
                             this.reactionTimes = new Array(this.practiceCount).fill(null);
-                            this.displayedSymbols = [];
-                            this.symbolAnswers = [];
-                            this.symbolCorrectFlags = [];
                             this.showPracticeTrial(display_element);
                         });
                     break;
@@ -138,9 +129,6 @@ var jsPsychDSST = (function () {
                             this.answers = new Array(this.testCount).fill(null);
                             this.correctFlags = new Array(this.testCount).fill(false);
                             this.reactionTimes = new Array(this.testCount).fill(null);
-                            this.displayedSymbols = [];
-                            this.symbolAnswers = [];
-                            this.symbolCorrectFlags = [];
                             this.startTime = performance.now();
                             this.startTimer(display_element);
                             this.showTestTrial(display_element);
@@ -175,41 +163,33 @@ var jsPsychDSST = (function () {
             return table;
         }
 
-        // add new symbol to display sequence
-        addSymbolToDisplay(symbol) {
-            this.displayedSymbols.push(symbol);
-            this.symbolAnswers.push(null);
-            this.symbolCorrectFlags.push(null);
-            
-            // if exceeds max displayed, remove the leftmost symbol
-            if (this.displayedSymbols.length > this.maxDisplayed) {
-                this.displayedSymbols.shift();
-                this.symbolAnswers.shift();
-                this.symbolCorrectFlags.shift();
-            }
-        }
+        // draw symbol sequence
+        renderSymbolSequence(sequence, answers, correctFlags, currentIdx) {
+            const totalLen = sequence.length;
+            const showRange = Math.min(11, totalLen); // max 11 symbols
+            const half = Math.floor(showRange / 2);
+            let start = Math.max(0, currentIdx - half);
+            let end = Math.min(totalLen, start + showRange);
+            start = Math.max(0, end - showRange); // ensure always show showRange symbols
 
-        // render RSVP display area
-        renderRSVPDisplay() {
-            let html = '<div class="dsst-rsvp-container">';
+            let html = '<div class="dsst-sequence-container" style="display:flex; justify-content:center; gap:10px; margin:20px 0;">';
             
-            for (let i = 0; i < this.displayedSymbols.length; i++) {
-                const symbol = this.displayedSymbols[i];
-                const answer = this.symbolAnswers[i];
-                const correct = this.symbolCorrectFlags[i];
-                const isCurrent = i === 0 && answer === null; // leftmost and unanswered symbol
+            for (let i = start; i < end; i++) {
+                const symbol = sequence[i];
+                const answer = answers[i];
+                const correct = correctFlags[i];
+                const isCurrent = i === currentIdx;
                 
-                html += `<div class="dsst-symbol-item${isCurrent ? ' current' : ''}">`;
+                html += `<div class="dsst-symbol-item${isCurrent ? ' current' : ''}" style="position:relative; width:80px; height:80px; border:${isCurrent ? '5px solid #FFC800' : '2px solid #fff'}; display:flex; align-items:center; justify-content:center; background:#fff;">`;
                 
-                // symbol image
-                html += `<img src="dsst symbol/${symbol}" class="dsst-symbol-image">`;
-                
-                // answer display area
                 if (answer !== null) {
+                    // show answer
                     const answerClass = correct ? 'dsst-answer-correct' : 'dsst-answer-incorrect';
-                    html += `<div class="dsst-answer-display ${answerClass}">${answer}</div>`;
+                    const color = correct ? '#28A745' : '#DC3545';
+                    html += `<div style="font-size:32px; font-weight:bold; color:${color};">${answer}</div>`;
                 } else {
-                    html += `<div class="dsst-answer-display dsst-answer-pending">?</div>`;
+                    // show symbol
+                    html += `<img src="dsst symbol/${symbol}" style="width:60px; height:60px;">`;
                 }
                 
                 html += '</div>';
@@ -226,16 +206,12 @@ var jsPsychDSST = (function () {
                 return;
             }
             
-            // add new symbol to display sequence
-            const symbol = this.practiceSeq[this.currentIdx];
-            this.addSymbolToDisplay(symbol);
-            
             const html = `
                 <div class="dsst-container">
                     ${this.showPairTable()}
-                    ${this.renderRSVPDisplay()}
+                    ${this.renderSymbolSequence(this.practiceSeq, this.answers, this.correctFlags, this.currentIdx)}
                     <div style="text-align:center; margin-top:20px;">
-                        <p style="color:white; font-size:18px;">Press the corresponding digit (1-9) for the leftmost symbol</p>
+                        <p style="color:white; font-size:18px;">Press the corresponding digit (1-9) for the highlighted symbol</p>
                     </div>
                     <p style="color:white; margin-top:30px;">Practice ${this.currentIdx + 1} / ${this.practiceCount}</p>
                 </div>`;
@@ -246,28 +222,23 @@ var jsPsychDSST = (function () {
                 if (e.key >= '1' && e.key <= '9') {
                     const rt = performance.now() - start;
                     const ansDigit = parseInt(e.key);
+                    const symbol = this.practiceSeq[this.currentIdx];
                     
-                    // 记录答案
+                    // record answer
                     this.answers[this.currentIdx] = ansDigit;
                     const correct = DIGIT_SYMBOL_MAP[ansDigit] === symbol;
                     this.correctFlags[this.currentIdx] = correct;
                     this.reactionTimes[this.currentIdx] = rt;
                     
-                    // update answers in display sequence
-                    if (this.symbolAnswers.length > 0) {
-                        this.symbolAnswers[0] = ansDigit;
-                        this.symbolCorrectFlags[0] = correct;
-                    }
-                    
-                    // re-render display
+                    // re-render to show feedback
                     this.showPracticeTrial(display_element);
                     
-                    // enter next trial after short delay
+                    // short delay before entering next question
                     setTimeout(() => {
                         document.removeEventListener('keydown', handler);
                         this.currentIdx++;
                         this.showPracticeTrial(display_element);
-                    }, 500); // reduce delay time
+                    }, 1000); // practice phase gives more time to see feedback
                 }
             };
             document.addEventListener('keydown', handler);
@@ -301,16 +272,12 @@ var jsPsychDSST = (function () {
                 return;
             }
             
-            // add new symbol to display sequence
-            const symbol = this.testSeq[this.currentIdx];
-            this.addSymbolToDisplay(symbol);
-            
             const html = `
                 <div class="dsst-container">
                     ${this.showPairTable()}
-                    ${this.renderRSVPDisplay()}
+                    ${this.renderSymbolSequence(this.testSeq, this.answers, this.correctFlags, this.currentIdx)}
                     <div style="text-align:center; margin-top:20px;">
-                        <p style="color:white; font-size:20px;">Press the corresponding digit (1-9) for the leftmost symbol</p>
+                        <p style="color:white; font-size:20px;">Press the corresponding digit (1-9) for the highlighted symbol</p>
                     </div>
                 </div>`;
             display_element.innerHTML = html;
@@ -320,6 +287,7 @@ var jsPsychDSST = (function () {
                 if (e.key >= '1' && e.key <= '9') {
                     const rt = performance.now() - start;
                     const ansDigit = parseInt(e.key);
+                    const symbol = this.testSeq[this.currentIdx];
                     
                     // record answer
                     this.answers[this.currentIdx] = ansDigit;
@@ -327,21 +295,15 @@ var jsPsychDSST = (function () {
                     this.correctFlags[this.currentIdx] = correct;
                     this.reactionTimes[this.currentIdx] = rt;
                     
-                    // update answers in display sequence
-                    if (this.symbolAnswers.length > 0) {
-                        this.symbolAnswers[0] = ansDigit;
-                        this.symbolCorrectFlags[0] = correct;
-                    }
-                    
-                    // re-render display
+                    // re-render to show feedback
                     this.showTestTrial(display_element);
                     
-                    // enter next trial after short delay
+                    // short delay before entering next question
                     setTimeout(() => {
                         document.removeEventListener('keydown', this.keyHandler);
                         this.currentIdx++;
                         this.showTestTrial(display_element);
-                    }, 500); // reduce delay time
+                    }, 500); // test
                 }
             };
             document.addEventListener('keydown', this.keyHandler);
@@ -354,6 +316,8 @@ var jsPsychDSST = (function () {
             const totalAnswered = this.answers.filter(a => a !== null).length;
             const correct = this.correctFlags.filter(Boolean).length;
             const wrong = totalAnswered - correct;
+            const usedTime = Math.min(this.timeLimit, (performance.now() - this.startTime) / 1000);
+            
             const html = `
                 <div class="dsst-container">
                     <h1 style="color:white;">Task Completed</h1>
@@ -361,6 +325,7 @@ var jsPsychDSST = (function () {
                         <p>Total attempted: ${totalAnswered}</p>
                         <p>Correct: ${correct}</p>
                         <p>Wrong: ${wrong}</p>
+                        <p>Time used: ${usedTime.toFixed(1)} seconds</p>
                     </div>
                     <button id="dsst-finish-btn" class="baba-button" style="margin-top:40px;">Continue</button>
                 </div>`;
@@ -371,6 +336,7 @@ var jsPsychDSST = (function () {
                     total_attempted: totalAnswered,
                     correct: correct,
                     wrong: wrong,
+                    used_time: usedTime,
                     answers: this.answers,
                     correct_flags: this.correctFlags,
                     reaction_times: this.reactionTimes

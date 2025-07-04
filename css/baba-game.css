@@ -876,3 +876,23 @@ body, html {
     border-color: #FFD700;
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
+
+/* Practice container styles */
+.dsst-practice-container {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 30px 0;
+    flex-wrap: wrap;
+}
+
+.dsst-practice-container .dsst-symbol-item {
+    flex: 0 0 auto;
+    margin: 0;
+    animation: none;
+}
+
+.dsst-practice-container .dsst-symbol-item.current {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+}

@@ -521,10 +521,17 @@ var jsPsychBabaGame = (function (jsPsychModule) {
                 const key = event.key;
                 let direction = null;
                 
-                // If game is dead, only allow pause and restart through normal handler
-                // Undo is handled by defeat overlay
+                // If game is dead, allow pause, restart, and undo through normal handler
                 if (this.gameEngine.dead) {
                     switch (key) {
+                        case 'z':
+                        case 'Z':
+                            this.gameEngine.undo();
+                            this.gameEngine.dead = false;
+                            this.undoCount++;
+                            this.updateDisplay();
+                            event.preventDefault();
+                            break;
                         case 'p':
                         case 'P':
                             this.togglePause();
@@ -623,7 +630,7 @@ var jsPsychBabaGame = (function (jsPsychModule) {
                 this.updateUI();
                 
                 // check game state
-                if (this.gameEngine.dead) {
+                if (this.gameEngine.dead && !document.getElementById('defeat-overlay')) {
                     this.showDefeatMessage();
                 } else if (this.gameEngine.checkWinCondition()) {
                     // Set game completed flag to prevent infinite recursion
@@ -673,7 +680,7 @@ var jsPsychBabaGame = (function (jsPsychModule) {
                 `;
                 
                 const instruction = document.createElement('p');
-                instruction.textContent = 'Press Z to undo or R to restart the level';
+                instruction.textContent = 'Press Z to undo or R to restart the level (this will close this message)';
                 instruction.style.cssText = `
                     color: #666;
                     font-size: 16px;
@@ -698,10 +705,10 @@ var jsPsychBabaGame = (function (jsPsychModule) {
                 overlay.appendChild(messageBox);
                 document.body.appendChild(overlay);
                 
-                // auto-hide after 5 seconds
-                this.defeatAutoHideTimer = setTimeout(() => {
-                    this.hideDefeatMessage();
-                }, 1000);
+                // Remove auto-hide timer - let user control when to close with Z or R
+                // this.defeatAutoHideTimer = setTimeout(() => {
+                //     this.hideDefeatMessage();
+                // }, 5000);
                 
                 // add key event listener
                 this.defeatKeyHandler = (event) => {
@@ -735,10 +742,9 @@ var jsPsychBabaGame = (function (jsPsychModule) {
                     document.removeEventListener('keydown', this.defeatKeyHandler);
                     this.defeatKeyHandler = null;
                 }
-                // clear auto-hide timer
-                if (this.defeatAutoHideTimer) {
-                    clearTimeout(this.defeatAutoHideTimer);
-                    this.defeatAutoHideTimer = null;
+                // Reset game state to allow normal keyboard input
+                if (this.gameEngine.dead) {
+                    this.gameEngine.dead = false;
                 }
             }
         }
