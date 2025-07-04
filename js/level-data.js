@@ -580,6 +580,11 @@ function generateLevel(templateId, conditionType = 'high-prior') {
                 return objMapping[key] || match;
             });
             
+            // special handling for TEXT_${destruct_property} -> TEXT_IMPACT or TEXT_DESTRUCT
+            if (newElement.type === 'TEXT_${destruct_property}' && objMapping.destruct_property) {
+                newElement.type = `TEXT_${objMapping.destruct_property}`;
+            }
+            
             // special handling for boundary objects in journey_environment level
             if (templateId === 'journey_environment' && newElement.type === 'POOL' && objMapping.boundary_obj) {
                 newElement.type = objMapping.boundary_obj;

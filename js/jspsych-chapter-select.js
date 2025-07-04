@@ -166,6 +166,7 @@ var jsPsychChapterSelect = (function () {
         createLevelItem(level, index, trial) {
             const completed = trial.completed_levels.includes(index);
             const locked = index >= trial.unlocked_levels;
+            console.log(`Level ${index} (${level.name}): completed=${completed}, locked=${locked}, unlocked_levels=${trial.unlocked_levels}`);
             
             let className = 'selection-item';
             if (completed) className += ' completed';

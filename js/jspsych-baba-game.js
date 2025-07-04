@@ -3,9 +3,9 @@
  * Core game plugin, handling interactions and rendering of Baba is You game
  */
 
-var jsPsychBabaGame = (function () {
+var jsPsychBabaGame = (function (jsPsychModule) {
     'use strict';
-
+    
     const info = {
         name: 'baba-game',
         version: '1.0.0',
@@ -120,15 +120,23 @@ var jsPsychBabaGame = (function () {
             this.imagesLoaded = false;
         }
         
+        static {
+            this.info = info;
+        }
+        
         async preloadImages() {
-            // 基础图片 - 所有关卡都需要
+            // base images - all levels need these
             const baseImagePaths = [
-                // 文本图片
-                'text_images/you.png', 'text_images/is.png', 'text_images/win.png', 'text_images/stop.png',
+                // text images
+                'text_images/you.png', 'text_images/is.png', 'text_images/win.png', 'text_images/stop.png', 'text_images/if.png',
                 'text_images/push.png', 'text_images/defeat.png', 'text_images/red.png', 'text_images/destruct.png',
                 'text_images/impact.png', 'text_images/shut.png', 'text_images/open.png',
+                'text_images/pumpkin.png', 'text_images/cloud.png', 'text_images/dice.png', 'text_images/sun.png',
+                'text_images/bomb.png', 'text_images/chain.png', 'text_images/anchor.png', 'text_images/fan.png',
+                'text_images/door.png', 'text_images/key.png', 'text_images/tree.png', 'text_images/rose.png',
+                'text_images/candle.png', 'text_images/pool.png', 'text_images/balloon.png', 'text_images/feeling.png',
                 
-                // 核心对象图片
+                // core object images
                 'images/pumpkin.png', 'images/sun.png', 'images/cloud.png', 'images/dice.png'
             ];
             
@@ -136,7 +144,6 @@ var jsPsychBabaGame = (function () {
             const additionalImagePaths = this.getRequiredImagesForLevel();
             
             const allImagePaths = [...baseImagePaths, ...additionalImagePaths];
-            console.log(`Preloading ${allImagePaths.length} images (${baseImagePaths.length} base + ${additionalImagePaths.length} level-specific)...`);
             
             const loadPromises = allImagePaths.map(path => {
                 return new Promise((resolve) => {
@@ -155,7 +162,6 @@ var jsPsychBabaGame = (function () {
             
             await Promise.all(loadPromises);
             this.imagesLoaded = true;
-            console.log(`Successfully preloaded ${Object.keys(this.imageCache).length} images`);
         }
         
         getRequiredImagesForLevel() {
@@ -168,6 +174,11 @@ var jsPsychBabaGame = (function () {
             
             // determine additional images needed for current level
             switch (levelId) {
+                case 'tutorial_1':
+                case 'tutorial_2':
+                    // Tutorial levels only need base images, no additional objects
+                    break;
+                    
                 case 'journey_environment':
                     // need POOL or BALLOON as boundary objects
                     requiredImages.push('images/pool.png', 'images/balloon.png');
@@ -209,7 +220,6 @@ var jsPsychBabaGame = (function () {
 
         async trial(display_element, trial) {
             try {
-                console.log('Starting Baba game trial with trial data:', trial);
                 
                 // save trial parameters
                 this.currentTrial = trial;
@@ -217,24 +227,10 @@ var jsPsychBabaGame = (function () {
                 // disable page scrolling when game starts
                 document.body.classList.add('baba-game-active');
 
-                // show loading message
-                display_element.innerHTML = `
-                    <div class="loading-container">
-                        <div style="text-align: center;">
-                            <div class="loading-spinner"></div>
-                            <div>Loading game assets...</div>
-                            <div style="margin-top: 20px; font-size: 18px;">Please wait...</div>
-                        </div>
-                    </div>
-                `;
-
-                // preload images before starting the game
-                console.log('Preloading images...');
+                // preload images before starting the game (silently)
                 await this.preloadImages();
-                console.log('Images preloaded successfully');
 
                 // initialize game engine
-                console.log('Initializing game engine with level_data:', trial.level_data);
                 if (!trial.level_data) {
                     throw new Error('level_data is missing from trial');
                 }
@@ -248,7 +244,6 @@ var jsPsychBabaGame = (function () {
                 this.pauseCount = 0;
                 
                 // create game interface
-                console.log('Creating game display...');
                 this.createGameDisplay(display_element, trial);
                 
                 // set keyboard listeners
@@ -256,7 +251,13 @@ var jsPsychBabaGame = (function () {
                 
                 // start game loop
                 this.gameLoop();
-                console.log('Game trial started successfully');
+                
+                // Wait for game completion
+                return new Promise((resolve) => {
+                    this.onGameComplete = (won, reason) => {
+                        resolve();
+                    };
+                });
                 
             } catch (error) {
                 console.error('Error in Baba game trial:', error);
@@ -275,7 +276,7 @@ var jsPsychBabaGame = (function () {
                 
                 // End the trial after a delay
                 setTimeout(() => {
-                    jsPsych.finishTrial({
+                    this.jsPsych.finishTrial({
                         success: false,
                         error: error.message
                     });
@@ -284,6 +285,7 @@ var jsPsychBabaGame = (function () {
         }
 
         createGameDisplay(display_element, trial) {
+            
             const html = `
                 <div class="baba-game-container">
                     <div class="level-info">
@@ -336,6 +338,8 @@ var jsPsychBabaGame = (function () {
             gridElement.style.gridTemplateColumns = `repeat(${gridSize[0]}, ${cellSize}px)`;
             gridElement.style.gridTemplateRows = `repeat(${gridSize[1]}, ${cellSize}px)`;
             
+            // Debug styles are now handled by CSS
+            
             // update CSS variables for other places
             document.documentElement.style.setProperty('--cell-size', `${cellSize}px`);
             
@@ -350,6 +354,7 @@ var jsPsychBabaGame = (function () {
                     cell.dataset.y = y;
                     cell.style.width = `${cellSize}px`;
                     cell.style.height = `${cellSize}px`;
+                    // Debug styles are now handled by CSS
                     gridElement.appendChild(cell);
                     this.gridCells[y][x] = cell;
                 }
@@ -362,7 +367,7 @@ var jsPsychBabaGame = (function () {
         calculateOptimalCellSize(gridSize) {
             // get available space
             const availableWidth = window.innerWidth - 40; // minus margin
-            const availableHeight = window.innerHeight - 160; // minus UI elements height
+            const availableHeight = window.innerHeight - 200; // increase reserved space for UI elements
             
             // calculate max cell size based on width and height
             const maxCellSizeByWidth = Math.floor(availableWidth / gridSize[0]);
@@ -428,6 +433,7 @@ var jsPsychBabaGame = (function () {
 
         renderObject(obj) {
             const [x, y] = obj.position;
+            
             if (y >= 0 && y < this.gridCells.length && 
                 x >= 0 && x < this.gridCells[y].length) {
                 
@@ -620,6 +626,8 @@ var jsPsychBabaGame = (function () {
                 if (this.gameEngine.dead) {
                     this.showDefeatMessage();
                 } else if (this.gameEngine.checkWinCondition()) {
+                    // Set game completed flag to prevent infinite recursion
+                    this.gameCompleted = true;
                     this.endGame(true, 'completed');
                 } else {
                     // use setTimeout to limit frame rate, improve performance
@@ -781,14 +789,40 @@ var jsPsychBabaGame = (function () {
                 final_state: detailedData.final_state
             };
             
+            // Call onGameComplete callback if it exists
+            if (this.onGameComplete) {
+                this.onGameComplete(won, reason);
+            }
+            
             // show completion message
             setTimeout(() => {
                 this.showCompletionMessage(won, reason);
                 
-                // extend victory message display time by 0.5s
+                // Wait for completion message to be shown, then finish trial
                 setTimeout(() => {
+                    // Clean up completion overlay before finishing trial
+                    const overlay = document.getElementById('completion-overlay');
+                    if (overlay && overlay.parentNode) {
+                        overlay.remove();
+                    }
+                    
+                    // Clean up any animation styles
+                    const styles = document.querySelectorAll('style');
+                    styles.forEach(style => {
+                        if (style.textContent.includes('fadeIn') || style.textContent.includes('slideIn')) {
+                            style.remove();
+                        }
+                    });
+                    
+                    // Also clean up any remaining game container
+                    const gameContainer = document.querySelector('.baba-game-container');
+                    if (gameContainer && gameContainer.parentNode) {
+                        gameContainer.remove();
+                    }
+                    
+                    // Finish trial immediately after cleanup
                     this.jsPsych.finishTrial(trial_data);
-                }, 1500); // extend by 0.5s
+                }, 1000); // Show message for 1s, then clean up and finish trial immediately
             }, 200);
         }
 
@@ -812,7 +846,7 @@ var jsPsychBabaGame = (function () {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 1000;
+                z-index: 100;
                 animation: fadeIn 0.3s ease-in-out;
             `;
             
@@ -876,21 +910,11 @@ var jsPsychBabaGame = (function () {
             `;
             document.head.appendChild(style);
             
-            // automatically clean up (after entering rating, to avoid flickering)
-            setTimeout(() => {
-                if (overlay && overlay.parentNode) {
-                    overlay.remove();
-                }
-                if (style && style.parentNode) {
-                    style.remove();
-                }
-            }, 1600); // clean up after transition, to avoid flickering
+            // Note: Cleanup is now handled in endGame function before finishing trial
         }
 
     }
-
-    BabaGamePlugin.info = info;
-
+    
     return BabaGamePlugin;
 
-})(); 
+})(jsPsychModule); 

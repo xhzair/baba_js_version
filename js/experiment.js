@@ -385,29 +385,28 @@ class ExperimentController {
                                 // Game level
                                 {
                                     type: jsPsychBabaGame,
+                                    on_load: function() {
+                                    },
                                     level_data: () => {
                                         try {
                                             const lastTrialData = jsPsych.data.getLastTrialData().values()[0];
-                                            console.log('Last trial data:', lastTrialData);
                                             
                                             if (!lastTrialData || !lastTrialData.level_data) {
                                                 console.error('No level_data found in last trial data');
                                                 throw new Error('Level data not found');
                                             }
                                             
-                                            const levelId = lastTrialData.level_data.level_id;
-                                            console.log('Level ID:', levelId);
+                                            // The level_data from chapter select is the complete level object
+                                            const levelData = lastTrialData.level_data;
+                                            const levelId = levelData.level_id;
                                             
                                             // Generate level data for both tutorial and journey levels
                                             if (levelId) {
-                                                console.log('Generating level with condition:', this.conditionType);
                                                 const generatedLevel = generateLevel(levelId, this.conditionType);
-                                                console.log('Generated level:', generatedLevel);
                                                 return generatedLevel;
                                             }
                                             
-                                            console.log('No level ID found, using original level data:', lastTrialData.level_data);
-                                            return lastTrialData.level_data;
+                                           return levelData;
                                         } catch (error) {
                                             console.error('Error in level_data function:', error);
                                             throw error;
@@ -427,10 +426,19 @@ class ExperimentController {
                                         condition_type: this.conditionType  // Record used experiment condition
                                     },
                                     on_finish: (data) => {
-                                        // Update game status
-                                        if (data.success) {
-                                            this.markLevelCompleted(this.currentChapter, this.currentLevelIndex);
-                                        }
+                                        this.markLevelCompleted(this.currentChapter, this.currentLevelIndex);
+                                    }
+                                },
+                                
+                                // Delay to allow completion message to disappear
+                                {
+                                    type: jsPsychHtmlKeyboardResponse,
+                                    stimulus: '',
+                                    choices: 'NO_KEYS',
+                                    trial_duration: 1500, // 1.5 second delay
+                                    data: {
+                                        trial_type: 'completion_delay',
+                                        participant_id: this.participantId
                                     }
                                 },
                                 
@@ -462,7 +470,6 @@ class ExperimentController {
                                             const gameTrialData = jsPsych.data.getLastTimelineData().filter({trial_type: 'game_level'}).values()[0];
                                             return gameTrialData && gameTrialData.level_name ? gameTrialData.level_name : 'Unknown Level';
                                         } catch (error) {
-                                            console.warn('Unable to retrieve level name:', error);
                                             return 'Unknown Level';
                                         }
                                     },
@@ -531,15 +538,17 @@ class ExperimentController {
     }
     
     markLevelCompleted(chapterKey, levelIndex) {
+        
         if (!this.completedLevels[chapterKey].includes(levelIndex)) {
             this.completedLevels[chapterKey].push(levelIndex);
             
             // Unlock next level
             if (levelIndex + 1 < this.allLevels[chapterKey].length) {
-                this.unlockedLevels[chapterKey] = Math.max(
+                const newUnlockedLevels = Math.max(
                     this.unlockedLevels[chapterKey], 
                     levelIndex + 2
                 );
+                this.unlockedLevels[chapterKey] = newUnlockedLevels;
             }
             
             // If all levels in tutorial are completed, unlock journey
@@ -551,7 +560,8 @@ class ExperimentController {
                 const journeyChapter = this.chapters.find(c => c.key === 'journey');
                 if (journeyChapter) journeyChapter.locked = false;
             }
-        }
+            
+        } 
     }
     
     hasRemainingLevels() {
@@ -577,6 +587,37 @@ class ExperimentController {
     saveExperimentData() {
         // Collect all experiment data
         const allData = jsPsych.data.get();
+        
+        // Check if experiment was completed normally
+        const lastTrialData = allData.values()[allData.count() - 1];
+        const isNormalCompletion = lastTrialData && (
+            lastTrialData.trial_type === 'overall_performance_rating' || 
+            lastTrialData.trial_type === 'completion_trial'
+        );
+        
+        // If not normal completion (e.g., ESC pressed, fullscreen exit), don't provide download
+        if (!isNormalCompletion) {
+            console.log('Experiment was not completed normally, skipping data download');
+            document.body.innerHTML = `
+                <div style="text-align: center; padding: 50px; font-family: Verdana, Arial, sans-serif; background-color: #7d7d7d; color: white; min-height: 100vh;">
+                    <h1>Experiment Interrupted</h1>
+                    <h2>Thank you for your participation!</h2>
+                    <p>Your session was interrupted. No data will be saved.</p>
+                    <p>If you'd like to participate again, please refresh the page.</p>
+                    <button onclick="window.close()" style="
+                        background-color: #4caf50; 
+                        color: white; 
+                        border: none; 
+                        padding: 12px 24px; 
+                        font-size: 16px; 
+                        border-radius: 8px; 
+                        cursor: pointer;
+                        margin-top: 20px;
+                    ">Close Window</button>
+                </div>
+            `;
+            return;
+        }
         
         // Get device information
         const deviceInfo = {
@@ -875,6 +916,14 @@ class ExperimentController {
 document.addEventListener('DOMContentLoaded', function() {
     
     try {
+        // Check if custom plugins are available
+        if (typeof jsPsychBabaGame === 'undefined') {
+            console.warn('jsPsychBabaGame plugin not found');
+        }
+        if (typeof jsPsychBabaInstructions === 'undefined') {
+            console.warn('jsPsychBabaInstructions plugin not found');
+        }
+        
         // Check if required functions exist
         if (typeof getAllLevels === 'undefined') {
             throw new Error('getAllLevels function not defined, please check level-data.js file');
