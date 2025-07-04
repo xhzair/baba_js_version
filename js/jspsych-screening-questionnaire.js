@@ -52,7 +52,8 @@ var jsPsychScreeningQuestionnaire = (function(){
                 { text: "Human Fall Flat", value: "human_fall_flat" },
                 { text: "Baba Is You", value: "baba_is_you" },
                 { text: "INSIDE", value: "inside" },
-                { text: "Unheard", value: "unheard" }
+                { text: "Unheard", value: "unheard" },
+                { text: "None of the above", value: "none_of_above" }
             ];
 
             games.forEach((game, i) => {
@@ -70,7 +71,22 @@ var jsPsychScreeningQuestionnaire = (function(){
             optionsDiv.addEventListener('change', (ev) => {
                 if (ev.target && ev.target.name === 'game') {
                     if (ev.target.checked) {
-                        selectedGames.push(ev.target.value);
+                        if (ev.target.value === 'none_of_above') {
+                            // 如果选择了"None of the above"，取消所有其他选项
+                            selectedGames = ['none_of_above'];
+                            games.forEach((game, i) => {
+                                if (game.value !== 'none_of_above') {
+                                    const checkbox = document.getElementById(`game_${i}`);
+                                    if (checkbox) checkbox.checked = false;
+                                }
+                            });
+                        } else {
+                            // 如果选择了其他游戏，取消"None of the above"选项
+                            selectedGames = selectedGames.filter(game => game !== 'none_of_above');
+                            const noneCheckbox = document.getElementById(`game_${games.length - 1}`);
+                            if (noneCheckbox) noneCheckbox.checked = false;
+                            selectedGames.push(ev.target.value);
+                        }
                     } else {
                         selectedGames = selectedGames.filter(game => game !== ev.target.value);
                     }
@@ -80,6 +96,7 @@ var jsPsychScreeningQuestionnaire = (function(){
 
             nextBtn.addEventListener('click', () => {
                 const hasPlayedBabaIsYou = selectedGames.includes('baba_is_you');
+                const hasPlayedNone = selectedGames.includes('none_of_above');
                 
                 if (hasPlayedBabaIsYou) {
                     this.showExclusionMessage();
@@ -88,6 +105,7 @@ var jsPsychScreeningQuestionnaire = (function(){
                         participant_id: this.participant,
                         selected_games: selectedGames,
                         has_played_baba_is_you: false,
+                        has_played_none: hasPlayedNone,
                         screening_passed: true
                     });
                 }
