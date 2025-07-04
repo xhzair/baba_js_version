@@ -727,6 +727,79 @@
                             });
                         }
                     });
+                } else if (question.id === 29 || question.id === 32) {
+                    // 自定义数字输入验证（年龄相关问题）
+                    let promptHtml = '';
+                    if (question.prompt) {
+                        promptHtml = `<div class="question-prompt">${question.prompt}</div>`;
+                    }
+
+                    trials.push({
+                        type: jsPsychHtmlKeyboardResponse,
+                        stimulus: `
+                            <div style="width:100%; max-width:800px; margin:0 auto; overflow:hidden;">
+                                ${progressBar}
+                                <div style="color:white; font-size:22px; margin-bottom:20px; text-align:center;">
+                                    ${question.question}
+                                </div>
+                                ${promptHtml}
+                                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom:20px;">
+                                    <input id="age-input" type="text" style="width:200px; height:40px; font-size:18px; text-align:center; border-radius:6px;" placeholder="Enter number" />
+                                    <div id="age-validation" style="color:#ff6b6b; font-size:16px; margin-top:8px; display:none;"></div>
+                                </div>
+                                <div style="text-align:center;">
+                                    <button id="age-next" class="baba-button" disabled style="padding:12px 25px; font-size:18px;">Continue</button>
+                                </div>
+                            </div>
+                        `,
+                        choices: "NO_KEYS",
+                        data: {
+                            trial_type: 'questionnaire_age',
+                            participant_id: participantId,
+                            questionId: question.id,
+                            questionSource: question.source,
+                            questionType: question.type
+                        },
+                        on_load: function() {
+                            const input = document.getElementById('age-input');
+                            const nextBtn = document.getElementById('age-next');
+                            const validationDiv = document.getElementById('age-validation');
+
+                            const validateInput = () => {
+                                const val = input.value.trim();
+                                const isNumber = /^\d+$/.test(val);
+                                let valid = false;
+                                if (isNumber) {
+                                    const num = parseInt(val);
+                                    if (question.id === 29) {
+                                        valid = num >= 18 && num <= 100;
+                                    } else {
+                                        valid = true; // 主观年龄仅需数字
+                                    }
+                                }
+                                if (valid) {
+                                    validationDiv.style.display = 'none';
+                                    nextBtn.disabled = false;
+                                } else {
+                                    validationDiv.textContent = question.id === 29 ? '请输入 18-100 之间的数字' : '请输入数字';
+                                    validationDiv.style.display = 'block';
+                                    nextBtn.disabled = true;
+                                }
+                            };
+
+                            input.addEventListener('input', validateInput);
+
+                            nextBtn.addEventListener('click', () => {
+                                jsPsych.finishTrial({
+                                    rt: performance.now(),
+                                    response: input.value.trim(),
+                                    question_id: question.id,
+                                    question_source: question.source,
+                                    question_type: question.type
+                                });
+                            });
+                        }
+                    });
                 } else if (question.type === 'text') {
                     let promptHtml = '';
                     if (question.prompt) {
