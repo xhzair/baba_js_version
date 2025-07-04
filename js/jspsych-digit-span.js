@@ -94,6 +94,14 @@ var jsPsychDigitSpan = (function() {
                                 ${trial.mode === 'forward' ? 'the same order' : 'reverse order'}
                             </span>
                         </p>
+                        <div style="background:linear-gradient(135deg, #ff6b6b, #ffd93d); padding:20px; border-radius:15px; margin:30px 0; border:3px solid #fff;">
+                            <p style="font-size:22px;color:#fff;font-weight:bold;margin:0;text-shadow:2px 2px 4px rgba(0,0,0,0.3);">
+                                🔊 <span style="color:#fff;font-weight:bold;">请确保打开扬声器或戴上耳机！</span>
+                            </p>
+                            <p style="font-size:18px;color:#fff;margin:10px 0 0 0;font-weight:bold;">
+                                🔊 Please make sure your speakers are on or headphones are connected!
+                            </p>
+                        </div>
                         <p style="font-size:20px;color:#ffd93d;margin-bottom:40px;">
                             🎧 Ready to listen carefully!
                         </p>

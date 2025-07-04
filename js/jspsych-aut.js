@@ -104,7 +104,15 @@ var jsPsychAUT = (function(){
         
         showObject(el){
             const obj=this.objects[this.idx];
-            el.innerHTML=`<div class='aut-container' style='width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;'><h2 style='color:white;'>Object: ${obj}</h2><div id='aut-timer' style='color:#ffcc00;font-size:20px;margin-top:10px;'></div><textarea id='aut-input' placeholder='Please type your ideas here. Separate them by commas.' autofocus style='width:80vw;max-width:1000px;min-width:400px;height:250px;margin-top:40px;font-size:18px;'></textarea><div id='aut-input-hint' style='color:#cccccc;margin-top:8px;font-size:14px;'>Please separate your ideas with commas (e.g., idea1, idea2, idea3)</div><div id='aut-input-warning' style='color:#ff6b6b;margin-top:8px;font-size:14px;display:none;'>⚠️ Please use commas to separate your ideas!</div><br><div style='color:#cccccc;margin-top:20px;font-size:14px;'>The test will automatically submit when time is up.</div></div>`;
+            el.innerHTML=`<div class='aut-container' style='width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;'>
+                <h2 style='color:white;'>Object: ${obj}</h2>
+                <div id='aut-timer' style='color:#ffcc00;font-size:20px;margin-top:10px;'></div>
+                <textarea id='aut-input' placeholder='Please type your ideas here. Separate them by commas.' autofocus style='width:80vw;max-width:1000px;min-width:400px;height:250px;margin-top:40px;font-size:18px;'></textarea>
+                <div id='aut-input-hint' style='color:#cccccc;margin-top:8px;font-size:20px;'>Please separate your ideas with commas (e.g., idea1, idea2, idea3)</div>
+                <div id='aut-input-warning' style='color:#ff6b6b;margin-top:8px;font-size:20px;display:none;'>⚠️ Please use commas to separate your ideas!</div>
+                <br>
+                <div style='color:#cccccc;margin-top:20px;font-size:20px;'>The test will automatically submit when time is up.</div>
+            </div>`;
             const textarea=document.getElementById('aut-input');
             const hintEl = document.getElementById('aut-input-hint');
             const warningEl = document.getElementById('aut-input-warning');

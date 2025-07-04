@@ -85,7 +85,7 @@ var jsPsychScreeningQuestionnaire = (function(){
                             selectedGames = selectedGames.filter(game => game !== 'none_of_above');
                             const noneCheckbox = document.getElementById(`game_${games.length - 1}`);
                             if (noneCheckbox) noneCheckbox.checked = false;
-                            selectedGames.push(ev.target.value);
+                        selectedGames.push(ev.target.value);
                         }
                     } else {
                         selectedGames = selectedGames.filter(game => game !== ev.target.value);

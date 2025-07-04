@@ -177,6 +177,8 @@ var jsPsychDSST = (function () {
                         <img src="dsst symbol/${symbol}" style="width:100px; height:100px; border:4px solid #fff; background:#fff; padding:10px; box-sizing:border-box;">
                         <p style="color:white; font-size:18px; margin-top:20px;">Press the corresponding digit (1-9)</p>
                     </div>
+                    <div id="feedback-display" style="margin-top:20px; text-align:center; min-height:60px;"></div>
+                    <div id="feedback-message" style="margin-top:10px; text-align:center; font-size:16px; min-height:30px;"></div>
                     <p style="color:white; margin-top:30px;">Practice ${this.currentIdx + 1} / ${this.practiceCount}</p>
                 </div>`;
             display_element.innerHTML = html;
@@ -189,9 +191,16 @@ var jsPsychDSST = (function () {
                     const correct = DIGIT_SYMBOL_MAP[ansDigit] === symbol;
                     this.correctFlags[this.currentIdx] = correct;
                     this.reactionTimes[this.currentIdx] = rt;
-                    document.removeEventListener('keydown', handler);
-                    this.currentIdx++;
-                    this.showPracticeTrial(display_element);
+                    
+                    // 显示反馈
+                    this.showFeedback(display_element, ansDigit, correct);
+                    
+                    // 延迟后进入下一个试次
+                    setTimeout(() => {
+                        document.removeEventListener('keydown', handler);
+                        this.currentIdx++;
+                        this.showPracticeTrial(display_element);
+                    }, 800); // 显示反馈800毫秒
                 }
             };
             document.addEventListener('keydown', handler);
@@ -232,6 +241,8 @@ var jsPsychDSST = (function () {
                         <img src="dsst symbol/${symbol}" style="width:110px; height:110px; border:4px solid #fff; background:#fff; padding:10px; box-sizing:border-box;">
                         <p style="color:white; font-size:20px; margin-top:20px;">Digit?</p>
                     </div>
+                    <div id="feedback-display" style="margin-top:20px; text-align:center; min-height:60px;"></div>
+                    <div id="feedback-message" style="margin-top:10px; text-align:center; font-size:16px; min-height:30px;"></div>
                     <!-- progress hidden -->
                 </div>`;
             display_element.innerHTML = html;
@@ -244,12 +255,44 @@ var jsPsychDSST = (function () {
                     const correct = DIGIT_SYMBOL_MAP[ansDigit] === symbol;
                     this.correctFlags[this.currentIdx] = correct;
                     this.reactionTimes[this.currentIdx] = rt;
-                    document.removeEventListener('keydown', this.keyHandler);
-                    this.currentIdx++;
-                    this.showTestTrial(display_element);
+                    
+                    // 显示反馈
+                    this.showFeedback(display_element, ansDigit, correct);
+                    
+                    // 延迟后进入下一个试次
+                    setTimeout(() => {
+                        document.removeEventListener('keydown', this.keyHandler);
+                        this.currentIdx++;
+                        this.showTestTrial(display_element);
+                    }, 800); // 显示反馈800毫秒
                 }
             };
             document.addEventListener('keydown', this.keyHandler);
+        }
+        
+        showFeedback(display_element, inputDigit, correct) {
+            const feedbackDisplay = document.getElementById('feedback-display');
+            const feedbackMessage = document.getElementById('feedback-message');
+            
+            if (feedbackDisplay && feedbackMessage) {
+                // 显示输入的数字
+                feedbackDisplay.innerHTML = `
+                    <span style="font-size:32px; font-weight:bold; color:${correct ? '#4CAF50' : '#f44336'};">
+                        ${inputDigit}
+                    </span>
+                `;
+                
+                // 显示反馈信息
+                if (correct) {
+                    feedbackMessage.innerHTML = `
+                        <span style="color:#4CAF50; font-weight:bold;">✓ 正确！</span>
+                    `;
+                } else {
+                    feedbackMessage.innerHTML = `
+                        <span style="color:#f44336; font-weight:bold;">✗ 错误</span>
+                    `;
+                }
+            }
         }
 
         showResult(display_element) {

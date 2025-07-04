@@ -71,8 +71,8 @@ var jsPsychQuestionnaire = (function(){
             // base container
             el.innerHTML = `<div class='q-container' style='width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 20px;'>
                 <h2 style='color:white;margin-bottom:15px;font-size:28px;'>Question ${this.idx + 1} / ${this.items.length}</h2>
-                <h3 style='color:white;text-align:center;margin-bottom:25px;font-size:24px;line-height:1.4;max-width:900px;'>${q.question}</h3>
-                ${q.prompt ? `<p style='color:#cccccc;max-width:900px;text-align:center;margin-bottom:15px;font-size:20px;line-height:1.5;'>${q.prompt}</p>` : ''}
+                <h3 style='color:white;text-align:center;margin-bottom:25px;font-size:26px;line-height:1.4;max-width:900px;'>${q.question}</h3>
+                ${q.prompt ? `<p style='color:#cccccc;max-width:900px;text-align:center;margin-bottom:15px;font-size:24px;line-height:1.5;'>${q.prompt}</p>` : ''}
                 <div id='q-options' style='margin-top:15px;'></div>
                 <button id='q-next' class='baba-button' style='margin-top:30px;font-size:20px;padding:12px 24px;' disabled>Next</button>
             </div>`;

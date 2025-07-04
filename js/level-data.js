@@ -198,6 +198,10 @@ const LEVEL_DATA = {
                 {type: "${push_obj}", pos: [5, 4], properties: ["push"]},
                 {type: "${push_obj}", pos: [5, 6], properties: ["push"]},
 
+                {type: "${destruct_obj}", pos: [0, 3], properties: ["destruct"]},
+                {type: "${destruct_obj}", pos: [1, 3], properties: ["destruct"]},
+                {type: "${destruct_obj}", pos: [2, 3], properties: ["destruct"]},
+
                 {type: "${destruct_obj}", pos: [8, 0], properties: ["destruct"]},
                 {type: "${destruct_obj}", pos: [8, 1], properties: ["destruct"]},
                 {type: "${destruct_obj}", pos: [8, 2], properties: ["destruct"]},
@@ -523,49 +527,44 @@ const LEVEL_DATA = {
             you_obj: "PUMPKIN",
             win_obj: "SUN",
             push_obj: "CLOUD",
-            stop_obj: "DICE",
-            disappear_obj: "BOMB",
-            shut_obj: "CHAIN",
-            red_obj: "ANCHOR",
-            defeat_obj: "BOMB",
-            open_obj: "KEY"
+            destruct_obj: "BOMB"
         }
     }
 };
 
 /**
- * 生成特定条件下的关卡
- * @param {string} templateId - 模板ID
- * @param {string} conditionType - 实验条件类型 ('high-prior'或'low-prior')
- * @returns {Object} 生成的关卡数据
+ * generate level with specific condition
+ * @param {string} templateId - template ID
+ * @param {string} conditionType - experimental condition type ('high-prior' or 'low-prior')
+ * @returns {Object} generated level data
  */
 function generateLevel(templateId, conditionType = 'high-prior') {
     const template = LEVEL_DATA.journey_templates.find(t => t.level_id === templateId);
     if (!template) return null;
     
-    // 使用新的实验条件系统
+    // use new experimental condition system
     const objMapping = window.getExperimentalCondition ? 
                        window.getExperimentalCondition(templateId, conditionType) :
                        LEVEL_DATA.experimental_conditions.default;
     
-    // 深拷贝模板
+    // deep copy template
     const level = JSON.parse(JSON.stringify(template));
     
-    // 替换占位符
+    // replace placeholder
     level.elements = level.elements.map(element => {
         let newElement = {...element};
         
-        // 替换类型中的占位符
+        // replace placeholder in type
         newElement.type = newElement.type.replace(/\$\{(\w+)\}/g, (match, key) => {
             return objMapping[key] || match;
         });
         
-        // 为journey_environment关卡特殊处理边界对象
+        // special handling for boundary objects in journey_environment level
         if (templateId === 'journey_environment' && newElement.type === 'POOL' && objMapping.boundary_obj) {
             newElement.type = objMapping.boundary_obj;
         }
         
-        // 如果是DESTRUCT属性，根据实验条件使用DESTRUCT或IMPACT
+        // if DESTRUCT property, use DESTRUCT or IMPACT based on experimental condition
         if (newElement.properties && newElement.properties.includes("destruct") && objMapping.destruct_property) {
             const index = newElement.properties.indexOf("destruct");
             newElement.properties[index] = objMapping.destruct_property.toLowerCase();
@@ -576,11 +575,11 @@ function generateLevel(templateId, conditionType = 'high-prior') {
         return newElement;
     });
     
-    // 生成初始规则
+    // generate initial rules
     const initialRules = [];
     const ruleDefinitions = {};
     
-    // 从elements生成规则
+    // generate rules from elements
     for (const elem of level.elements) {
         const elemType = elem.type;
         if (!elemType || elemType.startsWith('TEXT_')) continue;
@@ -595,7 +594,7 @@ function generateLevel(templateId, conditionType = 'high-prior') {
         
         for (const prop of properties) {
             const upperProp = prop.toUpperCase();
-            // 添加IMPACT到有效属性列表
+            // add IMPACT to valid property list
             if (['YOU', 'WIN', 'STOP', 'PUSH', 'DEFEAT', 'RED', 'DESTRUCT', 'IMPACT', 'SHUT', 'OPEN'].includes(upperProp)) {
                 if (!ruleDefinitions[baseType].includes(upperProp)) {
                     ruleDefinitions[baseType].push(upperProp);
@@ -604,14 +603,14 @@ function generateLevel(templateId, conditionType = 'high-prior') {
         }
     }
     
-    // 转换为规则数组
+    // convert to rule array
     for (const [objType, props] of Object.entries(ruleDefinitions)) {
         for (const prop of props) {
             initialRules.push([objType, 'IS', prop]);
         }
     }
     
-    // 设置关卡数据格式
+    // set level data format
     level.level_id = templateId;
     level.initial_objects = level.elements.map(elem => ({
         type: elem.type,
@@ -619,14 +618,14 @@ function generateLevel(templateId, conditionType = 'high-prior') {
     }));
     level.initial_rules = initialRules;
     level.grid_size = level.grid_size;
-    level.condition = conditionType; // 记录使用的条件类型
+    level.condition = conditionType; // record used condition type
     
     return level;
 }
 
 /**
- * 获取所有可用的关卡
- * @returns {Object} 包含tutorial和journey关卡的对象
+ * get all available levels
+ * @returns {Object} object containing tutorial and journey levels
  */
 function getAllLevels() {
     const levels = {
@@ -634,7 +633,7 @@ function getAllLevels() {
         journey: []
     };
     
-    // 生成所有journey关卡，使用default条件
+    // generate all journey levels, using default condition
     for (const template of LEVEL_DATA.journey_templates) {
         const level = generateLevel(template.level_id, 'default');
         if (level) {
@@ -646,10 +645,10 @@ function getAllLevels() {
 }
 
 /**
- * 获取特定关卡
- * @param {string} chapterKey - 章节键 ('tutorial' 或 'journey')
- * @param {number} levelIndex - 关卡索引
- * @returns {Object|null} 关卡数据或null
+ * get specific level
+ * @param {string} chapterKey - chapter key ('tutorial' or 'journey')
+ * @param {number} levelIndex - level index
+ * @returns {Object|null} level data or null
  */
 function getLevel(chapterKey, levelIndex) {
     const allLevels = getAllLevels();
@@ -660,8 +659,8 @@ function getLevel(chapterKey, levelIndex) {
 }
 
 /**
- * 获取章节信息
- * @returns {Array} 章节列表
+ * get chapter information
+ * @returns {Array} chapter list
  */
 function getChapters() {
     return [

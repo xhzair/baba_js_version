@@ -101,20 +101,6 @@ class BabaGameEngine {
         this.initializeRules();
         this.updateObjectProperties();
         this.parseRulesFromBoard();
-        
-        // Debug: Log initial object properties
-        console.log('BabaGameEngine - Initial object properties:');
-        this.objects.forEach(obj => {
-            if (obj.isPush || obj.isYou || obj.isWin || obj.isStop) {
-                console.log(`  ${obj.type} at [${obj.position[0]}, ${obj.position[1]}]:`, {
-                    isYou: obj.isYou,
-                    isPush: obj.isPush,
-                    isWin: obj.isWin,
-                    isStop: obj.isStop,
-                    properties: this.getObjectProperties(obj)
-                });
-            }
-        });
     }
     
     initializeObjects(elementsData) {
@@ -232,10 +218,8 @@ class BabaGameEngine {
         // THEN: Apply property rules to the (possibly transformed) objects
         for (const rule of this.rules) {
             if (!rule.isConditional && !properties.has(rule.subject)) {
-                console.log('updateObjectProperties - applying rule:', rule.subject, rule.verb, rule.predicate);
                 for (const obj of this.objects) {
                     if (obj.type === rule.subject && !obj.isText) {
-                        console.log('updateObjectProperties - applying property', rule.predicate, 'to', obj.type, 'at', obj.position);
                         this.applyProperty(obj, rule.predicate);
                     }
                 }
@@ -331,6 +315,7 @@ class BabaGameEngine {
         this.findVerticalRules();
         
         this.updateObjectProperties();
+        
     }
     
     findHorizontalRules() {
@@ -530,15 +515,7 @@ class BabaGameEngine {
             // Check for pushable objects (PUSH or TEXT)
             const pushableObjects = objectsAtPos.filter(o => o.isPush || o.isText);
             if (pushableObjects.length > 0) {
-                // Debug: Log pushable objects
-                console.log('getPushChain - pushable objects found:', pushableObjects.map(obj => ({
-                    type: obj.type,
-                    position: obj.position,
-                    isPush: obj.isPush,
-                    isText: obj.isText,
-                    properties: this.getObjectProperties(obj)
-                })));
-                
+
                 // Add all pushable objects to the chain
                 chain.push(...pushableObjects);
                 curPos = [curPos[0] + direction[0], curPos[1] + direction[1]];
@@ -562,8 +539,6 @@ class BabaGameEngine {
     processMove(direction) {
         if (this.dead || this.paused) return false;
         
-        this.saveState();
-        
         // Clear previous recently moved object tracking
         this.recentlyMovedObjects.clear();
         
@@ -574,6 +549,10 @@ class BabaGameEngine {
             this.logMove(direction, false);
             return false;
         }
+        
+        // Save state BEFORE any movement attempt
+        // This ensures we can undo even if the move fails
+        this.saveState();
         
         // Move all YOU objects
         let anyMoved = false;
@@ -588,8 +567,21 @@ class BabaGameEngine {
         let overlapObjects = [];
         
         if (anyMoved) {
+            
             // First parse rules and update properties
             this.parseRulesFromBoard(); // This already includes the call to updateObjectProperties()
+            
+            // Update operationState AFTER rule parsing to capture the new rules
+            this.operationState = {
+                objects: this.extractObjectsState(),
+                current_rules: this.extractRulesState(),
+                is_win: this.checkWinCondition(),
+                is_dead: this.dead,
+                has_control: this.hasPlayerControl(),
+                has_overlap: this.checkForObjectOverlaps(),
+                grid_size: this.gridSize,
+                level_id: this.levelId
+            };
             
             // Immediately handle DESTRUCT and collision (after property update, before marking handled)
             this.processDestruct();
@@ -629,34 +621,6 @@ class BabaGameEngine {
                 index === self.findIndex(o => o === obj)
             );
             
-            // Debug: Log overlap detection
-            console.log('processMove - overlap detection:', {
-                youObjects: youObjects.map(obj => ({
-                    type: obj.type,
-                    position: obj.position
-                })),
-                allMovedObjectsCount: allMovedObjects.length,
-                overlapObjectsCount: overlapObjects.length,
-                allMovedObjects: allMovedObjects.map(obj => ({
-                    type: obj.type,
-                    position: obj.position,
-                    isYou: obj.isYou,
-                    isWin: obj.isWin,
-                    isDefeat: obj.isDefeat,
-                    isPush: obj.isPush,
-                    isText: obj.isText
-                })),
-                overlapObjects: overlapObjects.map(obj => ({
-                    type: obj.type,
-                    position: obj.position,
-                    isYou: obj.isYou,
-                    isWin: obj.isWin,
-                    isDefeat: obj.isDefeat,
-                    isPush: obj.isPush,
-                    isText: obj.isText
-                }))
-            });
-            
             // Clear previous recently moved object tracking
             this.recentlyMovedObjects.clear();
             
@@ -667,22 +631,9 @@ class BabaGameEngine {
                 return false;
             }
             
-            // Debug: Check win condition
             const winCondition = this.checkWinCondition();
-            console.log('processMove - win condition check:', {
-                winCondition: winCondition,
-                youObjects: this.objects.filter(obj => obj.isYou).map(obj => ({
-                    type: obj.type,
-                    position: obj.position
-                })),
-                winObjects: this.objects.filter(obj => obj.isWin).map(obj => ({
-                    type: obj.type,
-                    position: obj.position
-                }))
-            });
             
             if (winCondition) {
-                console.log('processMove - WIN DETECTED!');
                 // Force the operation type to be overlap_win when win condition is detected
                 this.logMove(direction, true, allMovedObjects, overlapObjects, 'overlap_win');
                 moveLogged = true;
@@ -816,6 +767,9 @@ class BabaGameEngine {
             playerPosition: this.playerPosition ? {...this.playerPosition} : null
         });
         
+        // Save the previous operation state before updating it
+        this.previousOperationState = this.operationState ? JSON.parse(JSON.stringify(this.operationState)) : null;
+
         // Add complete game state analysis
         this.operationState = {
             objects: this.extractObjectsState(),
@@ -858,6 +812,10 @@ class BabaGameEngine {
         if (obj.isPush) properties.push("PUSH");
         if (obj.isWin) properties.push("WIN");
         if (obj.isDefeat) properties.push("DEFEAT");
+        if (obj.isDestruct) properties.push("DESTRUCT");
+        if (obj.isImpact) properties.push("IMPACT");
+        if (obj.isShut) properties.push("SHUT");
+        if (obj.isOpen) properties.push("OPEN");
         // Add more possible properties
         return properties;
     }
@@ -905,10 +863,34 @@ class BabaGameEngine {
         this.moveTimestamps.push(moveTimestamp);
         
         // Record move operation
-        const lastState = this.operationState ? JSON.parse(JSON.stringify(this.operationState)) : null;
+        this.logOperation(direction, success, allMovedObjects, overlapObjects, forcedOperationType, currentTime);
+    }
+    
+    logOperation(direction, success, allMovedObjects = [], overlapObjects = [], forcedOperationType = null, currentTime = null) {
+        if (!currentTime) {
+            currentTime = Date.now();
+        }
         
-        // If it's the first move, there's no previous state
+        // record move operation
+        const lastState = this.previousOperationState;
+        
+        // if it's the first move, we still want to record the operation but with no rule changes
         if (!lastState) {
+            // for first move, create a basic operation analysis without rule changes
+            const operationAnalysis = {
+                content_type: "move_only",
+                text_count: 0,
+                text_types: [],
+                object_count: 0,
+                object_types: [],
+                objects_involved: [],
+                rules_affected: { effect: "none", rules_added: [], rules_removed: [] },
+                move_number: this.operationCount,
+                timestamp: currentTime
+            };
+            
+            this.operationAnalyses.push(operationAnalysis);
+            this.lastOperationAnalysis = operationAnalysis;
             this.lastMoveTime = currentTime;
             return;
         }
@@ -925,20 +907,13 @@ class BabaGameEngine {
             movedObjects = this.findMovedObjects(px, py, direction, allMovedObjects, overlapObjects);
         }
         
-        // Analyze rule changes
+        
+        
         const ruleEffect = this.analyzeRuleChanges(lastState.current_rules, this.operationState.current_rules);
         
-        // Create operation analysis
+        // create operation analysis
         const operationType = forcedOperationType || this.classifyOperationType(movedObjects, overlapObjects);
         
-        // Debug: Log operation classification
-        console.log('logMove - operation classification:', {
-            operationType: operationType,
-            forcedOperationType: forcedOperationType,
-            movedObjectsCount: movedObjects.length,
-            textObjects: movedObjects.filter(obj => obj.is_text).map(obj => obj.type),
-            nonTextObjects: movedObjects.filter(obj => !obj.is_text).map(obj => obj.type)
-        });
         
         const operationAnalysis = {
             content_type: operationType,
@@ -952,12 +927,14 @@ class BabaGameEngine {
             timestamp: currentTime
         };
         
-        // Store operation analysis
-        this.operationAnalyses.push(operationAnalysis);
-        this.lastOperationAnalysis = operationAnalysis;
-        
-        // Update rule operation stats
-        this.updateRuleOperationStats(ruleEffect);
+        // Store operation analysis (only for regular moves, not meta operations)
+        if (!forcedOperationType || !["undo", "pause", "resume", "restart"].includes(forcedOperationType)) {
+            this.operationAnalyses.push(operationAnalysis);
+            this.lastOperationAnalysis = operationAnalysis;
+            
+            // Update rule operation stats
+            this.updateRuleOperationStats(ruleEffect);
+        }
         
         // Update last move time
         this.lastMoveTime = currentTime;
@@ -966,23 +943,6 @@ class BabaGameEngine {
     findMovedObjects(playerX, playerY, direction, allMovedObjects = [], overlapObjects = []) {
         // Find objects that were actually moved by the player (not overlapped)
         const movedObjects = [];
-        
-        // Debug: Log all moved objects
-        console.log('findMovedObjects - allMovedObjects:', allMovedObjects.map(obj => ({
-            type: obj.type,
-            position: obj.position,
-            isYou: obj.isYou,
-            isPush: obj.isPush,
-            isText: obj.isText
-        })));
-        
-        console.log('findMovedObjects - overlapObjects:', overlapObjects.map(obj => ({
-            type: obj.type,
-            position: obj.position,
-            isYou: obj.isYou,
-            isWin: obj.isWin,
-            isDefeat: obj.isDefeat
-        })));
         
         // Include all non-YOU objects that were moved (including those that might be overlapping)
         // This ensures that pushed objects are recorded even if they end up overlapping
@@ -998,16 +958,6 @@ class BabaGameEngine {
             }
         });
         
-        // Debug: Log the filtering process
-        console.log('findMovedObjects - filtering process:', {
-            totalObjects: allMovedObjects.length,
-            overlapObjectsCount: overlapObjects.length,
-            movedObjectsCount: movedObjects.length,
-            overlapObjectTypes: overlapObjects.map(obj => obj.type),
-            movedObjectTypes: movedObjects.map(obj => obj.type)
-        });
-        
-        console.log('findMovedObjects - result:', movedObjects);
         return movedObjects;
     }
     
@@ -1019,7 +969,6 @@ class BabaGameEngine {
         // Convert rule arrays to strings for comparison
         const oldRuleSet = new Set(oldRules.map(r => JSON.stringify(r)));
         const newRuleSet = new Set(newRules.map(r => JSON.stringify(r)));
-        
         // Find added and removed rules
         const added = [];
         const removed = [];
@@ -1038,7 +987,7 @@ class BabaGameEngine {
             }
         });
         
-        // 确定规则变化类型
+        // determine rule change type
         let effect = "none";
         if (added.length > 0 && removed.length > 0) {
             effect = "modified";
@@ -1048,29 +997,22 @@ class BabaGameEngine {
             effect = "destroyed";
         }
         
-        return {
+        const result = {
             effect,
             rules_added: added,
             rules_removed: removed
         };
+        
+        return result;
     }
     
-    classifyOperationType(movedObjects, overlapObjects = []) {
-        // Debug: Log input parameters
-        console.log('classifyOperationType - input:', {
-            movedObjectsCount: movedObjects ? movedObjects.length : 0,
-            overlapObjectsCount: overlapObjects ? overlapObjects.length : 0,
-            movedObjects: movedObjects ? movedObjects.map(obj => ({ type: obj.type, is_text: obj.is_text, properties: obj.properties })) : [],
-            overlapObjects: overlapObjects ? overlapObjects.map(obj => ({ 
-                type: obj.type, 
-                isWin: obj.isWin, 
-                isDefeat: obj.isDefeat,
-                properties: obj.properties,
-                position: obj.position
-            })) : []
-        });
+    classifyOperationType(movedObjects, overlapObjects = [], operationType = null) {
+        // 如果指定了操作类型（如元操作），直接返回
+        if (operationType) {
+            return operationType;
+        }
         
-        // Additional debug: Check if any overlap objects actually have WIN property
+        // additional debug: check if any overlap objects actually have WIN property
         if (overlapObjects && overlapObjects.length > 0) {
             const winObjectsInOverlap = overlapObjects.filter(obj => 
                 obj.isWin || (obj.properties && obj.properties.includes("WIN"))
@@ -1083,7 +1025,7 @@ class BabaGameEngine {
             })));
         }
         
-        // 根据移动的对象分类操作类型
+        // classify operation type based on moved objects
         if (!movedObjects || movedObjects.length === 0) {
             // Check for overlap cases
             if (overlapObjects.length > 0) {
@@ -1094,13 +1036,6 @@ class BabaGameEngine {
                 const defeatObjects = overlapObjects.filter(obj => 
                     obj.isDefeat || (obj.properties && obj.properties.includes("DEFEAT"))
                 );
-                
-                console.log('classifyOperationType - overlap analysis:', {
-                    winObjectsCount: winObjects.length,
-                    defeatObjectsCount: defeatObjects.length,
-                    winObjects: winObjects.map(obj => ({ type: obj.type, isWin: obj.isWin, properties: obj.properties })),
-                    defeatObjects: defeatObjects.map(obj => ({ type: obj.type, isDefeat: obj.isDefeat, properties: obj.properties }))
-                });
                 
                 if (winObjects.length > 0) {
                     return "overlap_win";
@@ -1113,7 +1048,7 @@ class BabaGameEngine {
             return "move_only";
         }
         
-        // 检查是否只推动了文本元素
+        // check if only text objects were pushed
         const textObjects = movedObjects.filter(obj => obj.is_text);
         const nonTextObjects = movedObjects.filter(obj => !obj.is_text);
         
@@ -1127,7 +1062,7 @@ class BabaGameEngine {
     }
     
     initRuleOperationStats() {
-        // 初始化规则操作统计
+        // initialize rule operation stats
         this.ruleOperationStats = {
             total_rule_operations: 0,
             rule_creation_count: 0,
@@ -1143,17 +1078,17 @@ class BabaGameEngine {
     }
     
     updateRuleOperationStats(ruleEffect) {
-        // 确保统计对象已初始化
+        // ensure stats object is initialized
         if (!this.ruleOperationStats) {
             this.initRuleOperationStats();
         }
         
-        // 只有在有规则变化时更新统计
+        // only update stats when there are rule changes
         if (ruleEffect.effect === "none") return;
         
         this.ruleOperationStats.total_rule_operations++;
         
-        // 更新规则变化类型计数
+        // update rule change type count
         if (ruleEffect.effect === "created") {
             this.ruleOperationStats.rule_creation_count++;
         } else if (ruleEffect.effect === "destroyed") {
@@ -1162,19 +1097,19 @@ class BabaGameEngine {
             this.ruleOperationStats.rule_modification_count++;
         }
         
-        // 分析规则类型
+        // analyze rule type
         const allRules = [...ruleEffect.rules_added, ...ruleEffect.rules_removed];
         allRules.forEach(rule => {
             if (!rule || rule.length < 3) return;
             
             const object = rule[2].toLowerCase();
             
-            // 分类规则类型
+            // classify rule type based on actual game elements and properties
             if (object === "you") {
                 this.ruleOperationStats.rule_types.movement_rules++;
-            } else if (["baba", "rock", "wall", "flag"].includes(object)) {
+            } else if (["pumpkin", "cloud", "dice", "sun", "pool", "bomb", "chain", "key", "anchor"].includes(object)) {
                 this.ruleOperationStats.rule_types.transformation_rules++;
-            } else if (["push", "stop", "defeat"].includes(object)) {
+            } else if (["push", "stop", "defeat", "red", "destruct", "impact", "shut", "open"].includes(object)) {
                 this.ruleOperationStats.rule_types.property_rules++;
             } else if (object === "win") {
                 this.ruleOperationStats.rule_types.win_condition_rules++;
@@ -1183,7 +1118,7 @@ class BabaGameEngine {
     }
     
     getRuleOperationStats() {
-        // 获取规则操作统计
+        // get rule operation stats
         return this.ruleOperationStats || this.initRuleOperationStats();
     }
     
@@ -1205,13 +1140,68 @@ class BabaGameEngine {
             };
             this.moveTimestamps.push(moveTimestamp);
             
+            // Save current state before undoing for analysis
+            const currentState = {
+                objects: this.extractObjectsState(),
+                current_rules: this.extractRulesState()
+            };
+            
             const lastState = this.savedStates.pop();
             this.objects = lastState.objects;
             this.rules = lastState.rules;
             this.operationCount--;
             this.dead = false;
-            // 清除最近移动对象的追踪
+            // remove recently moved objects
             this.recentlyMovedObjects.clear();
+            
+            // Parse rules after restoring state
+            this.parseRulesFromBoard();
+            
+            // Update object properties after restoring state
+            this.updateObjectProperties();
+            
+            // Update operation state after undo
+            this.operationState = {
+                objects: this.extractObjectsState(),
+                current_rules: this.extractRulesState(),
+                is_win: this.checkWinCondition(),
+                is_dead: this.dead,
+                has_control: this.hasPlayerControl(),
+                has_overlap: this.checkForObjectOverlaps(),
+                grid_size: this.gridSize,
+                level_id: this.levelId
+            };
+            
+            // Analyze what was undone
+            const ruleEffect = this.analyzeRuleChanges(currentState.current_rules, this.operationState.current_rules);
+            
+            // Create undo operation analysis
+            const undoAnalysis = {
+                content_type: "undo",
+                text_count: 0,
+                text_types: [],
+                object_count: 0,
+                object_types: [],
+                objects_involved: [],
+                rules_affected: ruleEffect,
+                move_number: this.operationCount,
+                timestamp: currentTime,
+                undo_details: {
+                    previous_operation_count: this.operationCount + 1,
+                    restored_objects_count: this.objects.length,
+                    restored_rules_count: this.rules.length
+                }
+            };
+            
+            // Store undo operation analysis
+            this.operationAnalyses.push(undoAnalysis);
+            this.lastOperationAnalysis = undoAnalysis;
+            
+            // Update rule operation stats
+            this.updateRuleOperationStats(ruleEffect);
+            
+            // Log the undo operation
+            this.logOperation([0, 0], true, [], [], "undo", currentTime);
             
             this.lastMoveTime = currentTime;
         }
@@ -1242,6 +1232,30 @@ class BabaGameEngine {
             };
             this.moveTimestamps.push(moveTimestamp);
             
+            // Create pause operation analysis
+            const pauseAnalysis = {
+                content_type: "pause",
+                text_count: 0,
+                text_types: [],
+                object_count: 0,
+                object_types: [],
+                objects_involved: [],
+                rules_affected: { effect: "none", rules_added: [], rules_removed: [] },
+                move_number: this.operationCount,
+                timestamp: currentTime,
+                pause_details: {
+                    remaining_time: this.getRemainingTime(),
+                    total_pause_time: this.totalPauseTime
+                }
+            };
+            
+            // Store pause operation analysis
+            this.operationAnalyses.push(pauseAnalysis);
+            this.lastOperationAnalysis = pauseAnalysis;
+            
+            // Log the pause operation
+            this.logOperation([0, 0], true, [], [], "pause", currentTime);
+            
             this.paused = true;
             this.pauseTime = Date.now();
             this.lastMoveTime = currentTime;
@@ -1265,6 +1279,31 @@ class BabaGameEngine {
                 was_successful: true
             };
             this.moveTimestamps.push(moveTimestamp);
+            
+            // Create resume operation analysis
+            const resumeAnalysis = {
+                content_type: "resume",
+                text_count: 0,
+                text_types: [],
+                object_count: 0,
+                object_types: [],
+                objects_involved: [],
+                rules_affected: { effect: "none", rules_added: [], rules_removed: [] },
+                move_number: this.operationCount,
+                timestamp: currentTime,
+                resume_details: {
+                    pause_duration: currentTime - this.pauseTime,
+                    total_pause_time: this.totalPauseTime + (currentTime - this.pauseTime),
+                    remaining_time: this.getRemainingTime()
+                }
+            };
+            
+            // Store resume operation analysis
+            this.operationAnalyses.push(resumeAnalysis);
+            this.lastOperationAnalysis = resumeAnalysis;
+            
+            // Log the resume operation
+            this.logOperation([0, 0], true, [], [], "resume", currentTime);
             
             this.paused = false;
             this.totalPauseTime += currentTime - this.pauseTime;
@@ -1290,17 +1329,42 @@ class BabaGameEngine {
         };
         this.moveTimestamps.push(moveTimestamp);
         
+        // Create restart operation analysis
+        const restartAnalysis = {
+            content_type: "restart",
+            text_count: 0,
+            text_types: [],
+            object_count: 0,
+            object_types: [],
+            objects_involved: [],
+            rules_affected: { effect: "none", rules_added: [], rules_removed: [] },
+            move_number: this.operationCount,
+            timestamp: currentTime,
+            restart_details: {
+                previous_operation_count: this.operationCount,
+                elapsed_time: timeSinceStart / 1000,
+                remaining_time: this.getRemainingTime()
+            }
+        };
+        
+        // Store restart operation analysis
+        this.operationAnalyses.push(restartAnalysis);
+        this.lastOperationAnalysis = restartAnalysis;
+        
+        // Log the restart operation
+        this.logOperation([0, 0], true, [], [], "restart", currentTime);
+        
         // Reset to initial state (but keep the original start time)
         this.dead = false;
         this.paused = false;
-        // 不重置开始时间，保持原有的8分钟限制
-        // this.startTime = Date.now();  // 注释掉这行
-        // this.totalPauseTime = 0;      // 注释掉这行
+        // do not reset start time, keep the original 8 minutes limit
+        // this.startTime = Date.now();  
+        // this.totalPauseTime = 0;      
         this.operationCount = 0;
         this.errorAttempts = 0;
         this.savedStates = [];
         
-        // 清除最近移动对象的追踪
+        // remove recently moved objects
         this.recentlyMovedObjects.clear();
         
         // Reset data collection

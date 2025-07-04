@@ -381,6 +381,24 @@ var jsPsychBabaGame = (function () {
                 const key = event.key;
                 let direction = null;
                 
+                // If game is dead, only allow pause and restart through normal handler
+                // Undo is handled by defeat overlay
+                if (this.gameEngine.dead) {
+                    switch (key) {
+                        case 'p':
+                        case 'P':
+                            this.togglePause();
+                            event.preventDefault();
+                            break;
+                        case 'r':
+                        case 'R':
+                            this.restartLevel();
+                            event.preventDefault();
+                            break;
+                    }
+                    return;
+                }
+                
                 // arrow keys move
                 switch (key) {
                     case 'ArrowUp':
@@ -537,17 +555,27 @@ var jsPsychBabaGame = (function () {
                 overlay.appendChild(messageBox);
                 document.body.appendChild(overlay);
                 
+                // Auto-hide after 5 seconds
+                this.defeatAutoHideTimer = setTimeout(() => {
+                    this.hideDefeatMessage();
+                }, 1000);
+                
                 // add key event listener
                 this.defeatKeyHandler = (event) => {
                     if (event.key === 'z' || event.key === 'Z') {
                         this.hideDefeatMessage();
                         this.gameEngine.undo();
                         this.gameEngine.dead = false;
+                        this.undoCount++;
+                        this.updateDisplay();
                         requestAnimationFrame(() => this.gameLoop());
                     } else if (event.key === 'r' || event.key === 'R') {
                         this.hideDefeatMessage();
                         this.gameEngine.restart();
                         this.gameEngine.dead = false;
+                        this.moveCount = 0;
+                        this.undoCount = 0;
+                        this.updateDisplay();
                         requestAnimationFrame(() => this.gameLoop());
                     }
                 };
@@ -563,6 +591,11 @@ var jsPsychBabaGame = (function () {
                 if (this.defeatKeyHandler) {
                     document.removeEventListener('keydown', this.defeatKeyHandler);
                     this.defeatKeyHandler = null;
+                }
+                // Clear auto-hide timer
+                if (this.defeatAutoHideTimer) {
+                    clearTimeout(this.defeatAutoHideTimer);
+                    this.defeatAutoHideTimer = null;
                 }
             }
         }
