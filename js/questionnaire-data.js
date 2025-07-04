@@ -791,6 +791,7 @@ window.embeddedQuestionnaire = [
         "source": "DEM",
         "type": "text",
         "question": "How old are you now?",
+        "prompt": "Please enter your age.",
         "options": []
     },
     {
@@ -870,6 +871,7 @@ window.embeddedQuestionnaire = [
         "source": "DEM",
         "type": "text",
         "question": "How old do you think you are? This question refers to your subjective feeling, not your actual age.",
+        "prompt": "Please enter a number for your subjective age feeling.",
         "options": []
     },
     {

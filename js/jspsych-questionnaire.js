@@ -116,9 +116,55 @@ var jsPsychQuestionnaire = (function(){
                 input.style.lineHeight = '1.5';
                 input.placeholder = 'Please enter here';
                 optionsDiv.appendChild(input);
+                
+                // Add validation message element
+                const validationMsg = document.createElement('div');
+                validationMsg.style.cssText = `
+                    color: #ff6b6b;
+                    font-size: 18px;
+                    margin-top: 10px;
+                    text-align: center;
+                    display: none;
+                `;
+                optionsDiv.appendChild(validationMsg);
+                
                 input.addEventListener('input', ()=>{
                     this.currentAnswerText = input.value.trim();
-                    this.currentNextBtn.disabled = input.value.trim().length === 0;
+                    const inputValue = input.value.trim();
+                    
+                    // Check if this is the age question (id: 29)
+                    if(q.id === 29) {
+                        const age = parseInt(inputValue);
+                        if(inputValue.length === 0) {
+                            this.currentNextBtn.disabled = true;
+                            validationMsg.style.display = 'none';
+                        } else if(isNaN(age) || age < 18 || age > 100) {
+                            this.currentNextBtn.disabled = true;
+                            validationMsg.textContent = 'Please enter a valid age between 18 and 100.';
+                            validationMsg.style.display = 'block';
+                        } else {
+                            this.currentNextBtn.disabled = false;
+                            validationMsg.style.display = 'none';
+                        }
+                    } else if(q.id === 32) {
+                        // Check if this is the subjective age question (id: 32)
+                        const subjectiveAge = parseInt(inputValue);
+                        if(inputValue.length === 0) {
+                            this.currentNextBtn.disabled = true;
+                            validationMsg.style.display = 'none';
+                        } else if(isNaN(subjectiveAge)) {
+                            this.currentNextBtn.disabled = true;
+                            validationMsg.textContent = 'Please enter a number for your subjective age.';
+                            validationMsg.style.display = 'block';
+                        } else {
+                            this.currentNextBtn.disabled = false;
+                            validationMsg.style.display = 'none';
+                        }
+                    } else {
+                        // For other text questions, just check if not empty
+                        this.currentNextBtn.disabled = inputValue.length === 0;
+                        validationMsg.style.display = 'none';
+                    }
                 });
             }
 
