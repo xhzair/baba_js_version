@@ -998,6 +998,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create and run experiment
         const timeline = experimentController.createTimeline();
         
+        // Add Pavlovia support if available
+        if (typeof Pavlovia !== 'undefined') {
+            const pavlovia = new Pavlovia();
+            timeline.unshift(pavlovia.init());
+            timeline.push(pavlovia.finish());
+        }
+        
         // Run experiment
         jsPsych.run(timeline);
         window.experimentStarted = true
