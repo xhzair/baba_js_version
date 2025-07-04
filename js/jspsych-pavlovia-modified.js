@@ -300,6 +300,8 @@ var jsPsychPavlovia = (function (jspsych) {
 
             fetch(url, {
                 method: 'POST',
+                credentials: 'include',
+                headers: { 'X-CSRFToken': _getCsrfToken() },
                 body: bodyParams
             })
                 .then(async (res) => {
@@ -358,6 +360,8 @@ var jsPsychPavlovia = (function (jspsych) {
 
             return fetch(url, {
                 method: 'DELETE',
+                credentials: 'include',
+                headers: { 'X-CSRFToken': _getCsrfToken() },
                 body: delParams
             })
                 .then(async (res) => {
@@ -435,6 +439,8 @@ var jsPsychPavlovia = (function (jspsych) {
 
             return fetch(url, {
                 method: 'POST',
+                credentials: 'include',
+                headers: { 'X-CSRFToken': _getCsrfToken() },
                 body: upParams
             })
                 .then(async (res) => {
@@ -482,6 +488,12 @@ var jsPsychPavlovia = (function (jspsych) {
             elem.click();
             document.body.removeChild(elem);
         }
+    };
+
+    // Helper to retrieve Django csrf token when running on pavlovia
+    const _getCsrfToken = () => {
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? match[1] : '';
     };
 
     // Export wrapper so experiment.js can create trials easily
