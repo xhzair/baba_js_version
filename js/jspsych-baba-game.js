@@ -208,43 +208,79 @@ var jsPsychBabaGame = (function () {
         }
 
         async trial(display_element, trial) {
-            // save trial parameters
-            this.currentTrial = trial;
+            try {
+                console.log('Starting Baba game trial with trial data:', trial);
+                
+                // save trial parameters
+                this.currentTrial = trial;
 
-            // disable page scrolling when game starts
-            document.body.classList.add('baba-game-active');
+                // disable page scrolling when game starts
+                document.body.classList.add('baba-game-active');
 
-            // show loading message
-            display_element.innerHTML = `
-                <div class="loading-container">
-                    <div style="text-align: center;">
-                        <div class="loading-spinner"></div>
-                        <div>Loading game assets...</div>
-                        <div style="margin-top: 20px; font-size: 18px;">Please wait...</div>
+                // show loading message
+                display_element.innerHTML = `
+                    <div class="loading-container">
+                        <div style="text-align: center;">
+                            <div class="loading-spinner"></div>
+                            <div>Loading game assets...</div>
+                            <div style="margin-top: 20px; font-size: 18px;">Please wait...</div>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
 
-            // preload images before starting the game
-            await this.preloadImages();
+                // preload images before starting the game
+                console.log('Preloading images...');
+                await this.preloadImages();
+                console.log('Images preloaded successfully');
 
-            // initialize game engine
-            this.gameEngine = new BabaGameEngine(trial.level_data, trial.time_limit);
-            this.gameCompleted = false;
-            this.gameWon = false;
-            this.startTime = Date.now();
-            this.moveCount = 0;
-            this.undoCount = 0;
-            this.pauseCount = 0;
-            
-            // create game interface
-            this.createGameDisplay(display_element, trial);
-            
-            // set keyboard listeners
-            this.setupKeyboardListeners();
-            
-            // start game loop
-            this.gameLoop();
+                // initialize game engine
+                console.log('Initializing game engine with level_data:', trial.level_data);
+                if (!trial.level_data) {
+                    throw new Error('level_data is missing from trial');
+                }
+                
+                this.gameEngine = new BabaGameEngine(trial.level_data, trial.time_limit);
+                this.gameCompleted = false;
+                this.gameWon = false;
+                this.startTime = Date.now();
+                this.moveCount = 0;
+                this.undoCount = 0;
+                this.pauseCount = 0;
+                
+                // create game interface
+                console.log('Creating game display...');
+                this.createGameDisplay(display_element, trial);
+                
+                // set keyboard listeners
+                this.setupKeyboardListeners();
+                
+                // start game loop
+                this.gameLoop();
+                console.log('Game trial started successfully');
+                
+            } catch (error) {
+                console.error('Error in Baba game trial:', error);
+                
+                // Show error message to user
+                display_element.innerHTML = `
+                    <div style="text-align: center; color: white; padding: 20px;">
+                        <h2>Game Loading Error</h2>
+                        <p>Sorry, there was an error loading the game. Please refresh the page and try again.</p>
+                        <p>Error details: ${error.message}</p>
+                        <button onclick="location.reload()" style="padding: 10px 20px; margin-top: 20px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            Refresh Page
+                        </button>
+                    </div>
+                `;
+                
+                // End the trial after a delay
+                setTimeout(() => {
+                    jsPsych.finishTrial({
+                        success: false,
+                        error: error.message
+                    });
+                }, 5000);
+            }
         }
 
         createGameDisplay(display_element, trial) {

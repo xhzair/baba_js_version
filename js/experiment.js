@@ -386,16 +386,32 @@ class ExperimentController {
                                 {
                                     type: jsPsychBabaGame,
                                     level_data: () => {
-                                        const lastTrialData = jsPsych.data.getLastTrialData().values()[0];
-                                        const levelId = lastTrialData.level_data.level_id;
-                                        
-                                        // Only use experiment condition for journey levels
-                                        if (levelId.startsWith('journey_')) {
-                                            // Use assigned experiment condition to generate level
-                                            return generateLevel(levelId, this.conditionType);
+                                        try {
+                                            const lastTrialData = jsPsych.data.getLastTrialData().values()[0];
+                                            console.log('Last trial data:', lastTrialData);
+                                            
+                                            if (!lastTrialData || !lastTrialData.level_data) {
+                                                console.error('No level_data found in last trial data');
+                                                throw new Error('Level data not found');
+                                            }
+                                            
+                                            const levelId = lastTrialData.level_data.level_id;
+                                            console.log('Level ID:', levelId);
+                                            
+                                            // Generate level data for both tutorial and journey levels
+                                            if (levelId) {
+                                                console.log('Generating level with condition:', this.conditionType);
+                                                const generatedLevel = generateLevel(levelId, this.conditionType);
+                                                console.log('Generated level:', generatedLevel);
+                                                return generatedLevel;
+                                            }
+                                            
+                                            console.log('No level ID found, using original level data:', lastTrialData.level_data);
+                                            return lastTrialData.level_data;
+                                        } catch (error) {
+                                            console.error('Error in level_data function:', error);
+                                            throw error;
                                         }
-                                        
-                                        return lastTrialData.level_data;
                                     },
                                     level_name: () => {
                                         const lastTrialData = jsPsych.data.getLastTrialData().values()[0];

@@ -539,50 +539,61 @@ const LEVEL_DATA = {
  * @returns {Object} generated level data
  */
 function generateLevel(templateId, conditionType = 'high-prior') {
-    console.log(`Generating level: ${templateId} with condition: ${conditionType}`);
+    // First check if it's a tutorial level
+    let template = LEVEL_DATA.tutorial.find(t => t.level_id === templateId);
+    let isTutorial = false;
     
-    const template = LEVEL_DATA.journey_templates.find(t => t.level_id === templateId);
-    if (!template) {
-        console.error(`Template not found for level: ${templateId}`);
-        return null;
+    if (template) {
+        isTutorial = true;
+    } else {
+        // If not tutorial, check journey templates
+        template = LEVEL_DATA.journey_templates.find(t => t.level_id === templateId);
+        if (!template) {
+            console.error(`Template not found for level: ${templateId}`);
+            return null;
+        }
     }
     
-    console.log(`Found template:`, template);
-    
-    // use new experimental condition system
-    const objMapping = window.getExperimentalCondition ? 
-                       window.getExperimentalCondition(templateId, conditionType) :
-                       LEVEL_DATA.experimental_conditions.default;
-    
-    console.log(`Using object mapping:`, objMapping);
+    // For tutorial levels, use default condition mapping
+    // For journey levels, use experimental condition system
+    let objMapping;
+    if (isTutorial) {
+        objMapping = LEVEL_DATA.experimental_conditions.default;
+    } else {
+        objMapping = window.getExperimentalCondition ? 
+                     window.getExperimentalCondition(templateId, conditionType) :
+                     LEVEL_DATA.experimental_conditions.default;
+    }
     
     // deep copy template
     const level = JSON.parse(JSON.stringify(template));
     
-    // replace placeholder
-    level.elements = level.elements.map(element => {
-        let newElement = {...element};
-        
-        // replace placeholder in type
-        newElement.type = newElement.type.replace(/\$\{(\w+)\}/g, (match, key) => {
-            return objMapping[key] || match;
+    if (isTutorial) {
+        // For tutorial levels, no placeholder replacement needed
+    } else {
+        // For journey levels, replace placeholders
+        level.elements = level.elements.map(element => {
+            let newElement = {...element};
+            
+            // replace placeholder in type
+            newElement.type = newElement.type.replace(/\$\{(\w+)\}/g, (match, key) => {
+                return objMapping[key] || match;
+            });
+            
+            // special handling for boundary objects in journey_environment level
+            if (templateId === 'journey_environment' && newElement.type === 'POOL' && objMapping.boundary_obj) {
+                newElement.type = objMapping.boundary_obj;
+            }
+            
+            // if DESTRUCT property, use DESTRUCT or IMPACT based on experimental condition
+            if (newElement.properties && newElement.properties.includes("destruct") && objMapping.destruct_property) {
+                const index = newElement.properties.indexOf("destruct");
+                newElement.properties[index] = objMapping.destruct_property.toLowerCase();
+            }
+            
+            return newElement;
         });
-        
-        // special handling for boundary objects in journey_environment level
-        if (templateId === 'journey_environment' && newElement.type === 'POOL' && objMapping.boundary_obj) {
-            newElement.type = objMapping.boundary_obj;
-        }
-        
-        // if DESTRUCT property, use DESTRUCT or IMPACT based on experimental condition
-        if (newElement.properties && newElement.properties.includes("destruct") && objMapping.destruct_property) {
-            const index = newElement.properties.indexOf("destruct");
-            newElement.properties[index] = objMapping.destruct_property.toLowerCase();
-        }
-        
-
-        
-        return newElement;
-    });
+    }
     
     // generate initial rules
     const initialRules = [];
@@ -638,11 +649,19 @@ function generateLevel(templateId, conditionType = 'high-prior') {
  */
 function getAllLevels() {
     const levels = {
-        tutorial: [...LEVEL_DATA.tutorial],
+        tutorial: [],
         journey: []
     };
     
-    // generate all journey levels, using default condition
+    // Generate tutorial levels
+    for (const template of LEVEL_DATA.tutorial) {
+        const level = generateLevel(template.level_id, 'default');
+        if (level) {
+            levels.tutorial.push(level);
+        }
+    }
+    
+    // Generate journey levels, using default condition
     for (const template of LEVEL_DATA.journey_templates) {
         const level = generateLevel(template.level_id, 'default');
         if (level) {
