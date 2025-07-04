@@ -807,25 +807,27 @@ class ExperimentController {
             }
         }
         
-        // Display thank you information
-        document.body.innerHTML = `
-            <div style="text-align: center; padding: 50px; font-family: Verdana, Arial, sans-serif; background-color: #7d7d7d; color: white; min-height: 100vh;">
-                <h1>Experiment completed!</h1>
-                <h2>Thank you for participating!</h2>
-                <p>Your data saved. Participant ID: ${this.participantId}</p>
-                <p>Thank you for your participation. The data from this experiment is valuable to our research.</p>
-                <button onclick="window.close()" style="
-                    background-color: #4caf50; 
-                    color: white; 
-                    border: none; 
-                    padding: 12px 24px; 
-                    font-size: 16px; 
-                    border-radius: 8px; 
-                    cursor: pointer; 
-                    margin-top: 20px;
-                ">Exit</button>
-            </div>
-        `;
+        // Display thank you information only when not on Pavlovia (to allow pavlovia.finish to run)
+        if (!isPavlovia) {
+            document.body.innerHTML = `
+                <div style="text-align: center; padding: 50px; font-family: Verdana, Arial, sans-serif; background-color: #7d7d7d; color: white; min-height: 100vh;">
+                    <h1>Experiment completed!</h1>
+                    <h2>Thank you for participating!</h2>
+                    <p>Your data saved. Participant ID: ${this.participantId}</p>
+                    <p>Thank you for your participation. The data from this experiment is valuable to our research.</p>
+                    <button onclick="window.close()" style="
+                        background-color: #4caf50; 
+                        color: white; 
+                        border: none; 
+                        padding: 12px 24px; 
+                        font-size: 16px; 
+                        border-radius: 8px; 
+                        cursor: pointer; 
+                        margin-top: 20px;
+                    ">Exit</button>
+                </div>
+            `;
+        }
     }
     
     createDSSTIntroTrial() {

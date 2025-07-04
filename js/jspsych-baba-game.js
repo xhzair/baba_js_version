@@ -252,11 +252,9 @@ var jsPsychBabaGame = (function (jsPsychModule) {
                 // start game loop
                 this.gameLoop();
                 
-                // Wait for game completion
+                // Wait for game completion and return data
                 return new Promise((resolve) => {
-                    this.onGameComplete = (won, reason) => {
-                        resolve();
-                    };
+                    this._resolveTrial = (data) => resolve(data);
                 });
                 
             } catch (error) {
@@ -805,48 +803,34 @@ var jsPsychBabaGame = (function (jsPsychModule) {
                 trial_data.rule_operation_stats_comp = compress(trial_data.rule_operation_stats);
                 trial_data.final_state_comp = compress(trial_data.final_state);
 
-                // 删除原始大字段，避免超过 65KB
+                // delete original large fields to avoid exceeding 65KB
                 delete trial_data.move_timestamps;
                 delete trial_data.operation_analyses;
                 delete trial_data.rule_operation_stats;
                 delete trial_data.final_state;
             }
             
-            // Call onGameComplete callback if it exists
-            if (this.onGameComplete) {
-                this.onGameComplete(won, reason);
-            }
-            
-            // show completion message
+            // show victory/failure prompt
+            this.showCompletionMessage(won, reason);
+
+            // send custom event for external debugging
+            const finishedEvent = new CustomEvent('baba_finished', {detail: trial_data});
+            document.dispatchEvent(finishedEvent);
+
+            // 0.6 seconds later, clean up the interface and resolve
             setTimeout(() => {
-                this.showCompletionMessage(won, reason);
-                
-                // Wait for completion message to be shown, then finish trial
-                setTimeout(() => {
-                    // Clean up completion overlay before finishing trial
-                    const overlay = document.getElementById('completion-overlay');
-                    if (overlay && overlay.parentNode) {
-                        overlay.remove();
-                    }
-                    
-                    // Clean up any animation styles
-                    const styles = document.querySelectorAll('style');
-                    styles.forEach(style => {
-                        if (style.textContent.includes('fadeIn') || style.textContent.includes('slideIn')) {
-                            style.remove();
-                        }
-                    });
-                    
-                    // Also clean up any remaining game container
-                    const gameContainer = document.querySelector('.baba-game-container');
-                    if (gameContainer && gameContainer.parentNode) {
-                        gameContainer.remove();
-                    }
-                    
-                    // Finish trial immediately after cleanup
-                    this.jsPsych.finishTrial(trial_data);
-                }, 1000); // Show message for 1s, then clean up and finish trial immediately
-            }, 200);
+                 const overlay = document.getElementById('completion-overlay');
+                 if (overlay && overlay.parentNode) overlay.remove();
+                 const styles = document.querySelectorAll('style');
+                 styles.forEach(s=>{if(s.textContent.includes('fadeIn')||s.textContent.includes('slideIn')) s.remove();});
+                 const gameContainer=document.querySelector('.baba-game-container');
+                 if(gameContainer&&gameContainer.parentNode) gameContainer.remove();
+
+                 if (this._resolveTrial) {
+                     this._resolveTrial(trial_data);
+                     this._resolveTrial = null;
+                 }
+            }, 600);
         }
 
         showCompletionMessage(won, reason) {
