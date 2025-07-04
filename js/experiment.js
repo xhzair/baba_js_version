@@ -634,13 +634,15 @@ class ExperimentController {
         // Collect all experiment data
         const allData = jsPsych.data.get();
         
-        // Check if experiment was completed normally
-        // Only questionnaire completion is considered normal completion
-        // as it ensures all data is collected
-        const lastTrialData = allData.values()[allData.count() - 1];
-        const isNormalCompletion = lastTrialData && (
-            lastTrialData.trial_type === 'questionnaire'
-        );
+        // 判断实验是否正常完成：只要问卷 trial 至少出现一次即可认为完成
+        const questionnaireTrialCount = allData.filter({ trial_type: 'questionnaire' }).count();
+        const isNormalCompletion = questionnaireTrialCount > 0;
+        
+        console.log('Experiment completion check:', {
+            questionnaire_trial_count: questionnaireTrialCount,
+            is_normal_completion: isNormalCompletion,
+            total_trials: allData.count()
+        });
         
         // If not normal completion (e.g., ESC pressed, fullscreen exit, or incomplete questionnaire), don't provide download
         if (!isNormalCompletion) {
@@ -726,7 +728,7 @@ class ExperimentController {
         const deduplicatedDsstData = removeDuplicates(dsstData, 'dsst');
         const deduplicatedVerbalFluencyData = removeDuplicates(verbalFluencyData, 'verbal-fluency');
         const deduplicatedAutData = removeDuplicates(autData, 'aut');
-        const deduplicatedQuestionnaireData = removeDuplicates(questionnaireData, 'html-keyboard-response');
+        const deduplicatedQuestionnaireData = removeDuplicates(questionnaireData, 'questionnaire');
         
         // Collect player feedback data
         const playerFeedbackData = allData.filter({trial_type: 'player_feedback'}).values();

@@ -64,6 +64,11 @@ var jsPsychQuestionnaire = (function(){
 
             // start showing first question
             this.showQuestion(display_element);
+
+            // 返回一个 Promise，只有在 finish() 调用时 resolve，才能让 jsPsych 等待问卷完成
+            return new Promise(resolve => {
+                this._resolveFinish = resolve;
+            });
         }
 
         showQuestion(el){
@@ -132,11 +137,25 @@ var jsPsychQuestionnaire = (function(){
                     this.currentAnswerText = input.value.trim();
                     const inputValue = input.value.trim();
                     
+                    console.log('Input validation debug:', {
+                        question_id: q.id,
+                        input_value: inputValue,
+                        question_type: q.type
+                    });
+                    
                     // Check if this is the age question (id: 29)
                     if(q.id === 29) {
                         // Check if input is a valid number (only digits)
                         const isValidNumber = /^\d+$/.test(inputValue);
                         const age = parseInt(inputValue);
+                        
+                        console.log('Age validation (ID 29):', {
+                            input_value: inputValue,
+                            is_valid_number: isValidNumber,
+                            parsed_age: age,
+                            is_nan: isNaN(age),
+                            in_range: age >= 18 && age <= 100
+                        });
                         
                         if(inputValue.length === 0) {
                             this.currentAnswerValue = null;
@@ -157,6 +176,13 @@ var jsPsychQuestionnaire = (function(){
                         // Check if input is a valid number (only digits)
                         const isValidNumber = /^\d+$/.test(inputValue);
                         const subjectiveAge = parseInt(inputValue);
+                        
+                        console.log('Subjective age validation (ID 32):', {
+                            input_value: inputValue,
+                            is_valid_number: isValidNumber,
+                            parsed_age: subjectiveAge,
+                            is_nan: isNaN(subjectiveAge)
+                        });
                         
                         if(inputValue.length === 0) {
                             this.currentAnswerValue = null;
@@ -330,8 +356,23 @@ var jsPsychQuestionnaire = (function(){
                 attention_check_data: attentionCheckData,
                 completion_time: new Date().toISOString()
             });
+
+            // 触发 trial 返回的 Promise 完成
+            if (this._resolveFinish) {
+                this._resolveFinish();
+            }
         }
     }
 
     return QPlugin;
-})(); 
+})();
+
+// Register questionnaire plugin with jsPsych
+(function () {
+    if (typeof jsPsych !== 'undefined' && jsPsych.plugins) {
+        jsPsych.plugins['questionnaire'] = jsPsychQuestionnaire;
+    }
+    if (typeof window !== 'undefined') {
+        window.jsPsychQuestionnaire = jsPsychQuestionnaire;
+    }
+})();
