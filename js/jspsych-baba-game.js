@@ -795,6 +795,23 @@ var jsPsychBabaGame = (function (jsPsychModule) {
                 final_state: detailedData.final_state
             };
             
+            // If running on Pavlovia, compress大型字段以避免 CSV 截断
+            const isPavlovia = typeof Pavlovia !== 'undefined';
+            if (isPavlovia && typeof LZString !== 'undefined') {
+                const compress = (obj) => LZString.compressToEncodedURIComponent(JSON.stringify(obj));
+
+                trial_data.move_timestamps_comp = compress(trial_data.move_timestamps);
+                trial_data.operation_analyses_comp = compress(trial_data.operation_analyses);
+                trial_data.rule_operation_stats_comp = compress(trial_data.rule_operation_stats);
+                trial_data.final_state_comp = compress(trial_data.final_state);
+
+                // 删除原始大字段，避免超过 65KB
+                delete trial_data.move_timestamps;
+                delete trial_data.operation_analyses;
+                delete trial_data.rule_operation_stats;
+                delete trial_data.final_state;
+            }
+            
             // Call onGameComplete callback if it exists
             if (this.onGameComplete) {
                 this.onGameComplete(won, reason);
