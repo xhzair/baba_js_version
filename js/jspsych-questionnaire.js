@@ -134,15 +134,18 @@ var jsPsychQuestionnaire = (function(){
                     
                     // Check if this is the age question (id: 29)
                     if(q.id === 29) {
+                        // Check if input is a valid number (only digits)
+                        const isValidNumber = /^\d+$/.test(inputValue);
                         const age = parseInt(inputValue);
+                        
                         if(inputValue.length === 0) {
                             this.currentAnswerValue = null;
                             this.currentNextBtn.disabled = true;
                             validationMsg.style.display = 'none';
-                        } else if(isNaN(age) || age < 18 || age > 100) {
+                        } else if(!isValidNumber || isNaN(age) || age < 18 || age > 100) {
                             this.currentAnswerValue = null;
                             this.currentNextBtn.disabled = true;
-                            validationMsg.textContent = 'Please enter a valid age between 18 and 100.';
+                            validationMsg.textContent = 'Please enter a valid age between 18 and 100 (numbers only).';
                             validationMsg.style.display = 'block';
                         } else {
                             this.currentAnswerValue = age;
@@ -151,15 +154,18 @@ var jsPsychQuestionnaire = (function(){
                         }
                     } else if(q.id === 32) {
                         // Check if this is the subjective age question (id: 32)
+                        // Check if input is a valid number (only digits)
+                        const isValidNumber = /^\d+$/.test(inputValue);
                         const subjectiveAge = parseInt(inputValue);
+                        
                         if(inputValue.length === 0) {
                             this.currentAnswerValue = null;
                             this.currentNextBtn.disabled = true;
                             validationMsg.style.display = 'none';
-                        } else if(isNaN(subjectiveAge)) {
+                        } else if(!isValidNumber || isNaN(subjectiveAge)) {
                             this.currentAnswerValue = null;
                             this.currentNextBtn.disabled = true;
-                            validationMsg.textContent = 'Please enter a number for your subjective age.';
+                            validationMsg.textContent = 'Please enter a number for your subjective age (numbers only).';
                             validationMsg.style.display = 'block';
                         } else {
                             this.currentAnswerValue = subjectiveAge;
@@ -318,6 +324,7 @@ var jsPsychQuestionnaire = (function(){
             };
             
             this.jsPsych.finishTrial({
+                trial_type: 'questionnaire',
                 participant_id: this.participant,
                 responses: this.responses,
                 attention_check_data: attentionCheckData,

@@ -577,7 +577,7 @@ class ExperimentController {
             rating_type: 'overall_performance',
             question: 'How would you rate your overall performance in the puzzle game?',
             data: {
-                trial_type: 'overall_performance_rating',
+                trial_type: 'rating-scale',
                 participant_id: this.participantId
             }
         };
@@ -635,20 +635,21 @@ class ExperimentController {
         const allData = jsPsych.data.get();
         
         // Check if experiment was completed normally
+        // Only questionnaire completion is considered normal completion
+        // as it ensures all data is collected
         const lastTrialData = allData.values()[allData.count() - 1];
         const isNormalCompletion = lastTrialData && (
-            lastTrialData.trial_type === 'overall_performance_rating' || 
-            lastTrialData.trial_type === 'completion_trial'
+            lastTrialData.trial_type === 'questionnaire'
         );
         
-        // If not normal completion (e.g., ESC pressed, fullscreen exit), don't provide download
+        // If not normal completion (e.g., ESC pressed, fullscreen exit, or incomplete questionnaire), don't provide download
         if (!isNormalCompletion) {
-            console.log('Experiment was not completed normally, skipping data download');
+            console.log('Experiment was not completed normally (questionnaire not finished), skipping data download');
             document.body.innerHTML = `
                 <div style="text-align: center; padding: 50px; font-family: Verdana, Arial, sans-serif; background-color: #7d7d7d; color: white; min-height: 100vh;">
-                    <h1>Experiment Interrupted</h1>
+                    <h1>Experiment Incomplete</h1>
                     <h2>Thank you for your participation!</h2>
-                    <p>Your session was interrupted. No data will be saved.</p>
+                    <p>Your session was not completed. Please complete the final questionnaire to save your data.</p>
                     <p>If you'd like to participate again, please refresh the page.</p>
                     <button onclick="window.close()" style="
                         background-color: #4caf50; 
@@ -693,7 +694,7 @@ class ExperimentController {
         // Questionnaire data - Only include true questionnaire data
         const questionnaireData = allData.filter(data => 
             data.trial_type && 
-            (data.trial_type === 'html-keyboard-response' && data.question_source)
+            (data.trial_type === 'questionnaire' || (data.trial_type === 'html-keyboard-response' && data.question_source))
         ).values();
         
         // Remove duplicates by trial_index and ensure only task-specific data
@@ -741,8 +742,9 @@ class ExperimentController {
         if (deduplicatedQuestionnaireData.length > 0) tasksCompleted.push('questionnaire');
         
         // Determine completion status
+        // Only consider fully completed if questionnaire is finished
         let completionStatus = 'completed';
-        if (tasksCompleted.length < 7) {
+        if (!deduplicatedQuestionnaireData.length > 0) {
             completionStatus = tasksCompleted.length > 3 ? 'partial' : 'abandoned';
         }
         
