@@ -293,15 +293,13 @@ var jsPsychPavlovia = (function (jspsych) {
 
         // query pavlovia server:
         return new Promise((resolve, reject) => {
-            const url = _config.pavlovia.URL + '/api/v2/experiments/' + encodeURIComponent(_config.experiment.fullpath) + '/sessions';
-            // encode as application/x-www-form-urlencoded (Pavlovia API expects form encoding)
-            const bodyParams = new URLSearchParams();
-            Object.entries(data).forEach(([k, v]) => bodyParams.append(k, v));
+            const url = (_config.pavlovia.URL.replace(/\/$/, '') +
+                        '/api/v2/experiments/' +
+                        encodeURIComponent(_config.experiment.fullpath) + '/sessions');
+            const bodyParams = new URLSearchParams(data);
 
             fetch(url, {
                 method: 'POST',
-                credentials: 'include',
-                headers: { 'X-CSRFToken': _getCsrfToken() },
                 body: bodyParams
             })
                 .then(async (res) => {
@@ -355,13 +353,10 @@ var jsPsychPavlovia = (function (jspsych) {
         }
         else {
             // asynchronously query the pavlovia server:
-            const delParams = new URLSearchParams();
-            delParams.append('isCompleted', isCompleted);
+            const delParams = new URLSearchParams({ isCompleted });
 
             return fetch(url, {
                 method: 'DELETE',
-                credentials: 'include',
-                headers: { 'X-CSRFToken': _getCsrfToken() },
                 body: delParams
             })
                 .then(async (res) => {
@@ -424,6 +419,8 @@ var jsPsychPavlovia = (function (jspsych) {
 
         const url = _config.pavlovia.URL + '/api/v2/experiments/' + encodeURIComponent(_config.experiment.fullpath) + '/sessions/' + _config.session.token + '/results';
 
+        const upParams = new URLSearchParams({ key, value });
+
         // synchronous query the pavlovia server:
         if (sync) {
             const formData = new FormData();
@@ -433,14 +430,8 @@ var jsPsychPavlovia = (function (jspsych) {
         }
         // asynchronously query the pavlovia server:
         else {
-            const upParams = new URLSearchParams();
-            upParams.append('key', key);
-            upParams.append('value', value);
-
             return fetch(url, {
                 method: 'POST',
-                credentials: 'include',
-                headers: { 'X-CSRFToken': _getCsrfToken() },
                 body: upParams
             })
                 .then(async (res) => {
