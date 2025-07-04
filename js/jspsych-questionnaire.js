@@ -136,13 +136,16 @@ var jsPsychQuestionnaire = (function(){
                     if(q.id === 29) {
                         const age = parseInt(inputValue);
                         if(inputValue.length === 0) {
+                            this.currentAnswerValue = null;
                             this.currentNextBtn.disabled = true;
                             validationMsg.style.display = 'none';
                         } else if(isNaN(age) || age < 18 || age > 100) {
+                            this.currentAnswerValue = null;
                             this.currentNextBtn.disabled = true;
                             validationMsg.textContent = 'Please enter a valid age between 18 and 100.';
                             validationMsg.style.display = 'block';
                         } else {
+                            this.currentAnswerValue = age;
                             this.currentNextBtn.disabled = false;
                             validationMsg.style.display = 'none';
                         }
@@ -150,18 +153,22 @@ var jsPsychQuestionnaire = (function(){
                         // Check if this is the subjective age question (id: 32)
                         const subjectiveAge = parseInt(inputValue);
                         if(inputValue.length === 0) {
+                            this.currentAnswerValue = null;
                             this.currentNextBtn.disabled = true;
                             validationMsg.style.display = 'none';
                         } else if(isNaN(subjectiveAge)) {
+                            this.currentAnswerValue = null;
                             this.currentNextBtn.disabled = true;
                             validationMsg.textContent = 'Please enter a number for your subjective age.';
                             validationMsg.style.display = 'block';
                         } else {
+                            this.currentAnswerValue = subjectiveAge;
                             this.currentNextBtn.disabled = false;
                             validationMsg.style.display = 'none';
                         }
                     } else {
                         // For other text questions, just check if not empty
+                        this.currentAnswerValue = inputValue.length > 0 ? inputValue : null;
                         this.currentNextBtn.disabled = inputValue.length === 0;
                         validationMsg.style.display = 'none';
                     }

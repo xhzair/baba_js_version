@@ -20,6 +20,23 @@ const jsPsych = initJsPsych({
             return; // End
         }
 
+        // Check if running on Pavlovia
+        const isPavlovia = typeof Pavlovia !== 'undefined';
+        
+        if (isPavlovia) {
+            // On Pavlovia, data is automatically saved, just show completion message
+            document.body.innerHTML = `
+                <div style="text-align: center; padding: 50px; font-family: Verdana, Arial, sans-serif; background-color: #7d7d7d; color: white; min-height: 100vh;">
+                    <h1>Experiment completed!</h1>
+                    <h2>Thank you for participating!</h2>
+                    <p>Your data has been automatically saved.</p>
+                    <p>Thank you for your participation. The data from this experiment is valuable to our research.</p>
+                    <p>You can now close this window.</p>
+                </div>
+            `;
+            return;
+        }
+
         // Otherwise, call the experiment controller's data saving function
         // Fallback: display JSON data
         if (window.experimentController) {
@@ -109,6 +126,15 @@ class ExperimentController {
         // 3. Puzzle solving overall performance scoring
         timeline.push(this.createCompletionTrial());
         
+        // 3b. Transition to Cognitive Tests
+        timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `<h2 style="color:white;">Next: Cognitive Tests</h2>
+                      <p style="color:white; font-size:18px;">You have completed the puzzle game. Now you will complete several cognitive tests.</p>`,
+            choices: ['Continue'],
+            data: { trial_type: 'transition_to_cognitive', participant_id: this.participantId }
+        });
+        
         // 4. Digit Span Test introduction
         timeline.push(this.createDigitSpanIntroTrial());
         
@@ -121,11 +147,29 @@ class ExperimentController {
         // 6. Digit Span Test - Reverse
         timeline.push(this.createDigitSpanBackwardTrial());
         
+        // 6b. Transition to DSST
+        timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `<h2 style="color:white;">Next: Digit-Symbol Substitution Test</h2>
+                      <p style="color:white; font-size:18px;">You will now complete a digit-symbol substitution task to test your processing speed.</p>`,
+            choices: ['Continue'],
+            data: { trial_type: 'transition_to_dsst', participant_id: this.participantId }
+        });
+        
         // 7. DSST introduction
         timeline.push(this.createDSSTIntroTrial());
         
         // 8. DSST task
         timeline.push(this.createDSSTTaskTrial());
+        
+        // 8b. Transition to AUT
+        timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `<h2 style="color:white;">Next: Alternative Uses Test</h2>
+                      <p style="color:white; font-size:18px;">You will now complete a creativity test where you think of alternative uses for common objects.</p>`,
+            choices: ['Continue'],
+            data: { trial_type: 'transition_to_aut', participant_id: this.participantId }
+        });
         
         // 9. Alternative Uses Test (AUT)
         timeline.push(this.createAUTTrial());
@@ -133,7 +177,8 @@ class ExperimentController {
         // 9b. Transition to Verbal Fluency
         timeline.push({
             type: jsPsychHtmlButtonResponse,
-            stimulus: `<h2 style="color:white;">Next Task: Verbal Fluency Test</h2>`,
+            stimulus: `<h2 style="color:white;">Next: Verbal Fluency Test</h2>
+                      <p style="color:white; font-size:18px;">You will now complete a verbal fluency test where you name as many items as possible from a category.</p>`,
             choices: ['Continue'],
             data: { trial_type: 'transition_aut_vf', participant_id: this.participantId }
         });
@@ -144,7 +189,8 @@ class ExperimentController {
         // 10b. Transition to Questionnaire
         timeline.push({
             type: jsPsychHtmlButtonResponse,
-            stimulus: `<h2 style="color:white;">Next Task: Questionnaire</h2>`,
+            stimulus: `<h2 style="color:white;">Next: Final Questionnaire</h2>
+                      <p style="color:white; font-size:18px;">You have completed all cognitive tests. Now you will answer some final questions about your experience.</p>`,
             choices: ['Continue'],
             data: { trial_type: 'transition_vf_q', participant_id: this.participantId }
         });
@@ -739,20 +785,25 @@ class ExperimentController {
             player_feedback_data: playerFeedbackData
         };
         
-        // Save to local storage
-        localStorage.setItem(`baba_experiment_${this.participantId}`, JSON.stringify(experimentSummary));
+        // Check if running on Pavlovia
+        const isPavlovia = typeof Pavlovia !== 'undefined';
         
-        // Try to download data as JSON file
-        try {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(experimentSummary, null, 2));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", `experiment_data_${this.participantId}.json`);
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-        } catch (e) {
-            console.error("Failed to download data file:", e);
+        if (!isPavlovia) {
+            // Save to local storage only if not on Pavlovia
+            localStorage.setItem(`baba_experiment_${this.participantId}`, JSON.stringify(experimentSummary));
+            
+            // Try to download data as JSON file only if not on Pavlovia
+            try {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(experimentSummary, null, 2));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", `experiment_data_${this.participantId}.json`);
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            } catch (e) {
+                console.error("Failed to download data file:", e);
+            }
         }
         
         // Display thank you information
@@ -944,9 +995,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create and run experiment
         const timeline = experimentController.createTimeline();
         
+        // Add Pavlovia support if available
+        if (typeof Pavlovia !== 'undefined') {
+            const pavlovia = new Pavlovia();
+            timeline.unshift(pavlovia.init());
+            timeline.push(pavlovia.finish());
+        }
+        
         // Run experiment
         jsPsych.run(timeline);
-        window.experimentStarted = true;
+        window.experimentStarted = true
         
     } catch (error) {
         console.error('Experiment initialization failed:', error);
