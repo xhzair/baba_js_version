@@ -108,6 +108,12 @@ class ExperimentController {
     createTimeline() {
         const timeline = [];
         
+        // -1. preload all resources
+        timeline.push(this.createPreloadTrial());
+        
+        // 0. 2 seconds countdown, give participants a psychological buffer
+        timeline.push(this.createCountdownTrial());
+        
         // 0. Screening questionnaire
         timeline.push(this.createScreeningTrial());
         
@@ -962,6 +968,39 @@ class ExperimentController {
             `,
             choices: ['Continue'],
             data: { trial_type: 'digit_span_transition', participant_id: this.participantId }
+        };
+    }
+
+    // New: Preload trial —— automatically scan the subsequent timeline and preload all images/audio
+    createPreloadTrial() {
+        return {
+            type: jsPsychPreload,
+            auto_preload: true,
+            show_progress_bar: true,
+            message: 'Loading resources, please wait…',
+            data: { trial_type: 'preload', participant_id: this.participantId }
+        };
+    }
+
+    // New: 2 seconds countdown Trial
+    createCountdownTrial() {
+        return {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<div style="color:white;font-size:32px;text-align:center;">
+                            Loading completed<br>The experiment will start in <span id="countdown">2</span> seconds…
+                        </div>`,
+            choices: "NO_KEYS",
+            trial_duration: 2000,
+            on_start: function(){
+                let t = 2;
+                const id = setInterval(() => {
+                    t -= 1;
+                    const el = document.getElementById('countdown');
+                    if (el) el.textContent = t.toString();
+                    if (t <= 0) clearInterval(id);
+                }, 1000);
+            },
+            data: { trial_type: 'countdown', participant_id: this.participantId }
         };
     }
 }
