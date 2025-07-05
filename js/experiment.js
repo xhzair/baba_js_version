@@ -440,28 +440,11 @@ class ExperimentController {
                                     on_load: function() {
                                     },
                                     level_data: () => {
-                                        try {
-                                            const selectionDataArr = jsPsych.data.get().filterCustom(d => d.trial_type==='level_selection' && d.selection_type==='level').values();
-                                            const selectionData = selectionDataArr.length > 0 ? selectionDataArr[selectionDataArr.length - 1] : null;
-                                            if (!selectionData || !selectionData.level_data) {
-                                                console.error('No level_data found in last level_selection trial');
-                                                throw new Error('Level data not found');
-                                            }
-                                            const levelData = selectionData.level_data;
-                                            const levelId = levelData.level_id;
-                                            if (levelId) {
-                                                return generateLevel(levelId, this.conditionType);
-                                            }
-                                            return levelData;
-                                        } catch (error) {
-                                            console.error('Error in level_data function:', error);
-                                            throw error;
-                                        }
+                                        const levelData = this.allLevels[this.currentChapter][this.currentLevelIndex];
+                                        return levelData;
                                     },
                                     level_name: () => {
-                                        const selectionDataArr = jsPsych.data.get().filterCustom(d => d.trial_type==='level_selection' && d.selection_type==='level').values();
-                                        const sel = selectionDataArr.length > 0 ? selectionDataArr[selectionDataArr.length - 1] : null;
-                                        return sel ? sel.level_name : 'Unknown Level';
+                                        return this.allLevels[this.currentChapter][this.currentLevelIndex].name;
                                     },
                                     chapter_name: () => {
                                         return this.currentChapter;
