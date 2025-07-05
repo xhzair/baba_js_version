@@ -431,6 +431,18 @@ class ExperimentController {
                             }
                         },
                         
+                        // Level loading splash
+                        {
+                            type: jsPsychHtmlKeyboardResponse,
+                            stimulus: '<div style="color:white;font-size:28px;text-align:center;">Loading level…</div>',
+                            choices: 'NO_KEYS',
+                            trial_duration: 500,
+                            data: {
+                                trial_type: 'level_loading',
+                                participant_id: this.participantId
+                            }
+                        },
+                        
                         // Game level and scoring condition timeline
                         {
                             timeline: [
@@ -482,12 +494,12 @@ class ExperimentController {
                                     }
                                 },
                                 
-                                // Delay to allow completion message to disappear
+                                // Delay to allow completion message to disappear (shortened)
                                 {
                                     type: jsPsychHtmlKeyboardResponse,
                                     stimulus: '',
                                     choices: 'NO_KEYS',
-                                    trial_duration: 1500, // 1.5 second delay
+                                    trial_duration: 500, // 0.5 second delay
                                     data: {
                                         trial_type: 'completion_delay',
                                         participant_id: this.participantId
@@ -973,11 +985,35 @@ class ExperimentController {
 
     // New: Preload trial —— automatically scan the subsequent timeline and preload all images/audio
     createPreloadTrial() {
+        // stimulus manual resource list (if new files are added, please add them here)
+        const images = [
+            // Object images actually referenced
+            'images/pumpkin.png','images/sun.png','images/cloud.png','images/dice.png', // tutorial objects
+            'images/pool.png','images/balloon.png',                                  // journey_environment
+            'images/bomb.png',                                                      // journey_understandproperty
+            'images/chain.png','images/anchor.png','images/fan.png',                 // journey_switchidentity
+            'images/door.png','images/key.png','images/tree.png','images/rose.png', // journey_combination
+
+            // Text images referenced by BabaGamePlugin baseImagePaths
+            'text_images/you.png','text_images/is.png','text_images/win.png','text_images/stop.png','text_images/if.png',
+            'text_images/push.png','text_images/defeat.png','text_images/red.png','text_images/destruct.png','text_images/impact.png','text_images/shut.png','text_images/open.png',
+            'text_images/pumpkin.png','text_images/cloud.png','text_images/dice.png','text_images/sun.png','text_images/bomb.png','text_images/chain.png','text_images/anchor.png','text_images/fan.png','text_images/door.png','text_images/key.png','text_images/tree.png','text_images/rose.png','text_images/candle.png','text_images/pool.png','text_images/balloon.png','text_images/feeling.png',
+
+            // red variants for RED property levels
+            'images_red/pumpkin.png','images_red/sun.png','images_red/cloud.png','images_red/dice.png','images_red/pool.png','images_red/balloon.png','images_red/bomb.png','images_red/chain.png','images_red/anchor.png','images_red/fan.png','images_red/door.png','images_red/key.png','images_red/tree.png','images_red/rose.png',
+        ];
+
+        const audio = [
+            'audio/digit_0.wav','audio/digit_1.wav','audio/digit_2.wav','audio/digit_3.wav','audio/digit_4.wav','audio/digit_5.wav','audio/digit_6.wav','audio/digit_7.wav','audio/digit_8.wav','audio/digit_9.wav'
+        ];
+
         return {
             type: jsPsychPreload,
             auto_preload: true,
             show_progress_bar: true,
             message: 'Loading resources, please wait…',
+            images: images,
+            audio: audio,
             data: { trial_type: 'preload', participant_id: this.participantId }
         };
     }
