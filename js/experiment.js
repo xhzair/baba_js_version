@@ -431,18 +431,6 @@ class ExperimentController {
                             }
                         },
                         
-                        // Level loading splash
-                        {
-                            type: jsPsychHtmlKeyboardResponse,
-                            stimulus: '<div style="color:white;font-size:28px;text-align:center;">Loading level…</div>',
-                            choices: 'NO_KEYS',
-                            trial_duration: 500,
-                            data: {
-                                trial_type: 'level_loading',
-                                participant_id: this.participantId
-                            }
-                        },
-                        
                         // Game level and scoring condition timeline
                         {
                             timeline: [
