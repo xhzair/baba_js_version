@@ -453,32 +453,27 @@ class ExperimentController {
                                     },
                                     level_data: () => {
                                         try {
-                                            const lastTrialData = jsPsych.data.getLastTrialData().values()[0];
-                                            
-                                            if (!lastTrialData || !lastTrialData.level_data) {
-                                                console.error('No level_data found in last trial data');
+                                            const selectionDataArr = jsPsych.data.get().filter({trial_type: 'level_selection'}).values();
+                                            const selectionData = selectionDataArr.length > 0 ? selectionDataArr[selectionDataArr.length - 1] : null;
+                                            if (!selectionData || !selectionData.level_data) {
+                                                console.error('No level_data found in last level_selection trial');
                                                 throw new Error('Level data not found');
                                             }
-                                            
-                                            // The level_data from chapter select is the complete level object
-                                            const levelData = lastTrialData.level_data;
+                                            const levelData = selectionData.level_data;
                                             const levelId = levelData.level_id;
-                                            
-                                            // Generate level data for both tutorial and journey levels
                                             if (levelId) {
-                                                const generatedLevel = generateLevel(levelId, this.conditionType);
-                                                return generatedLevel;
+                                                return generateLevel(levelId, this.conditionType);
                                             }
-                                            
-                                           return levelData;
+                                            return levelData;
                                         } catch (error) {
                                             console.error('Error in level_data function:', error);
                                             throw error;
                                         }
                                     },
                                     level_name: () => {
-                                        const lastTrialData = jsPsych.data.getLastTrialData().values()[0];
-                                        return lastTrialData.level_name;
+                                        const selectionDataArr = jsPsych.data.get().filter({trial_type: 'level_selection'}).values();
+                                        const sel = selectionDataArr.length > 0 ? selectionDataArr[selectionDataArr.length - 1] : null;
+                                        return sel ? sel.level_name : 'Unknown Level';
                                     },
                                     chapter_name: () => {
                                         return this.currentChapter;
