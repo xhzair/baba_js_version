@@ -440,8 +440,12 @@ class ExperimentController {
                                     on_load: function() {
                                     },
                                     level_data: () => {
-                                        const levelData = this.allLevels[this.currentChapter][this.currentLevelIndex];
-                                        return levelData;
+                                        const baseLevel = this.allLevels[this.currentChapter][this.currentLevelIndex];
+                                        // regenerate level data based on current experiment condition to ensure object mapping is correct
+                                        if (baseLevel && baseLevel.level_id) {
+                                            return generateLevel(baseLevel.level_id, this.conditionType);
+                                        }
+                                        return baseLevel;
                                     },
                                     level_name: () => {
                                         return this.allLevels[this.currentChapter][this.currentLevelIndex].name;
