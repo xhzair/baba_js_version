@@ -75,12 +75,24 @@ var jsPsychDigitSpan = (function() {
 
             function generateNewSequence() {
                 const pool = [0,1,2,3,4,5,6,7,8,9];
-                let seq = [];
-                let tempPool = [...pool];
-                for (let i = 0; i < currentLength; i++) {
-                    const idx = Math.floor(Math.random() * tempPool.length);
-                    seq.push(tempPool.splice(idx, 1)[0]);
+                function isArithmetic(arr){
+                    if(arr.length<2) return false;
+                    const diff = arr[1]-arr[0];
+                    if(Math.abs(diff)!==1 && Math.abs(diff)!==2) return false;
+                    for(let i=2;i<arr.length;i++){
+                        if(arr[i]-arr[i-1]!==diff) return false;
+                    }
+                    return true;
                 }
+                let seq;
+                do {
+                    seq = [];
+                    let tempPool=[...pool];
+                    for(let i=0;i<currentLength;i++){
+                        const idx=Math.floor(Math.random()*tempPool.length);
+                        seq.push(tempPool.splice(idx,1)[0]);
+                    }
+                } while(isArithmetic(seq) || isArithmetic([...seq].reverse()));
                 return seq;
             }
 
