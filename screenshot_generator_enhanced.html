@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baba Game Screenshot Generator</title>
+    
+    <!-- 引入现有的CSS -->
+    <link href="css/baba-game.css" rel="stylesheet" type="text/css" />
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .screenshot-item {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 15px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .screenshot-item h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            text-align: center;
+            font-size: 18px;
+        }
+        
+        .screenshot-item canvas {
+            display: block;
+            margin: 0 auto;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .download-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .download-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        .generate-all-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        
+        .generate-all-btn:hover {
+            background-color: #218838;
+        }
+        
+        .download-options {
+            display: inline-block;
+            margin: 10px;
+        }
+        
+        .download-options .download-btn {
+            margin: 0 5px;
+        }
+        
+        .progress {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+        
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Baba Game Screenshot Generator</h1>
+        <p>生成journey章节每个关卡在high-prior和low-prior条件下的游戏界面截图</p>
+        
+        <!-- CORS问题说明 -->
+        <div class="cors-notice" style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <h3 style="color: #856404; margin-top: 0;">⚠️ 重要提示：CORS问题</h3>
+            <p style="color: #856404; margin-bottom: 10px;">
+                如果你看到图片加载失败的错误，这是因为浏览器的CORS安全策略。要解决这个问题，请：
+            </p>
+            <ol style="color: #856404; margin-bottom: 10px;">
+                <li><strong>方法1（推荐）：</strong> 启动本地服务器
+                    <br><code style="background: #f8f9fa; padding: 2px 4px; border-radius: 3px;">cd baba_js_version && python -m http.server 8000</code>
+                    <br>或者在Windows上双击 <code style="background: #f8f9fa; padding: 2px 4px; border-radius: 3px;">start_server.bat</code> 文件
+                    <br>然后在浏览器中访问 <code style="background: #f8f9fa; padding: 2px 4px; border-radius: 3px;">http://localhost:8000/screenshot_generator_enhanced.html</code>
+                </li>
+                <li><strong>方法2：</strong> 使用Chrome浏览器并添加启动参数
+                    <br><code style="background: #f8f9fa; padding: 2px 4px; border-radius: 3px;">chrome.exe --allow-file-access-from-files --disable-web-security --user-data-dir="C:/temp/chrome_dev"</code>
+                </li>
+            </ol>
+            <p style="color: #856404; margin-bottom: 0;">
+                <strong>注意：</strong> 即使图片加载失败，截图生成器仍然可以工作，会显示彩色方块代替图片。
+            </p>
+        </div>
+        
+        <div class="controls">
+            <button class="generate-all-btn" onclick="generateAllScreenshots()">生成所有截图</button>
+            <button class="download-btn" onclick="startLocalServer()" style="background-color: #17a2b8;">启动本地服务器</button>
+            <button class="download-btn" onclick="reportMissingImages()" style="background-color: #6c757d;">检查缺失图片</button>
+            <div class="download-options">
+                <button class="download-btn" onclick="downloadAllScreenshots()">下载所有截图 (ZIP)</button>
+                <button class="download-btn" onclick="downloadIndividualScreenshots()">逐个下载截图</button>
+                <button class="download-btn" onclick="testDownload()">测试下载功能</button>
+            </div>
+            <div class="progress" id="progress" style="display: none;">
+                <div>进度: <span id="progress-text">0/12</span></div>
+            </div>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div class="screenshot-grid" id="screenshot-grid">
+            <div class="loading">点击"生成所有截图"开始生成...</div>
+        </div>
+    </div>
+
+    <!-- 引入现有的JS文件 -->
+    <script src="js/level-data.js"></script>
+    <script src="js/experimental-conditions.js"></script>
+    <script src="js/game-engine.js"></script>
+    
+    <!-- 引入JSZip库用于创建压缩包 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <script>
+        // 定义journey关卡
+        const journeyLevels = [
+            'journey_environment',
+            'journey_understandproperty', 
+            'journey_switchidentity',
+            'journey_break',
+            'journey_grammar',
+            'journey_combination'
+        ];
+        
+        const conditions = ['high-prior', 'low-prior'];
+        let screenshots = [];
+        let currentProgress = 0;
+        const totalScreenshots = journeyLevels.length * conditions.length;
+        
+        // 图像资源缓存
+        const imageCache = {};
+        
+        // 显示状态信息
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        // 更新进度
+        function updateProgress() {
+            currentProgress++;
+            const progressDiv = document.getElementById('progress');
+            const progressText = document.getElementById('progress-text');
+            progressDiv.style.display = 'block';
+            progressText.textContent = `${currentProgress}/${totalScreenshots}`;
+        }
+        
+        // 检查图片是否存在
+        function checkImageExists(src) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(true);
+                img.onerror = () => resolve(false);
+                img.src = src;
+            });
+        }
+        
+        // 加载图像资源
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                if (imageCache[src]) {
+                    resolve(imageCache[src]);
+                    return;
+                }
+                
+                const img = new Image();
+                // 在本地文件系统中运行时，不使用crossOrigin
+                img.onload = () => {
+                    imageCache[src] = img;
+                    resolve(img);
+                };
+                img.onerror = () => {
+                    console.warn(`Failed to load image: ${src}`);
+                    // 不拒绝Promise，而是返回null，这样程序可以继续运行
+                    imageCache[src] = null;
+                    resolve(null);
+                };
+                img.src = src;
+            });
+        }
+        
+        // 预加载常用图像
+        async function preloadImages() {
+            // 定义所有可能的图片路径
+            const allImagePaths = [
+                // 游戏对象图像
+                'images/pumpkin.png',
+                'images/sun.png',
+                'images/dice.png',
+                'images/cloud.png',
+                'images/bomb.png',
+                'images/chain.png',
+                'images/anchor.png',
+                'images/fan.png',
+                'images/door.png',
+                'images/key.png',
+                'images/tree.png',
+                'images/rose.png',
+                'images/candle.png',
+                'images/pool.png',
+                'images/balloon.png',
+                // 文本图像
+                'text_images/pumpkin.png',
+                'text_images/is.png',
+                'text_images/you.png',
+                'text_images/win.png',
+                'text_images/stop.png',
+                'text_images/push.png',
+                'text_images/defeat.png',
+                'text_images/destruct.png',
+                'text_images/impact.png',
+                'text_images/shut.png',
+                'text_images/open.png',
+                'text_images/red.png',
+                'text_images/if.png',
+                'text_images/feeling.png',
+                'text_images/sun.png',
+                'text_images/dice.png',
+                'text_images/cloud.png',
+                'text_images/bomb.png',
+                'text_images/chain.png',
+                'text_images/anchor.png',
+                'text_images/fan.png',
+                'text_images/door.png',
+                'text_images/key.png',
+                'text_images/tree.png',
+                'text_images/rose.png',
+                'text_images/candle.png',
+                'text_images/apple.png',
+                'text_images/banana.png',
+                'text_images/battery.png',
+                'text_images/bone.png',
+                'text_images/bottle.png',
+                'text_images/carrot.png',
+                'text_images/chair.png',
+                'text_images/cherry.png',
+                'text_images/flag.png',
+                'text_images/glasses.png',
+                'text_images/glove.png',
+                'text_images/hat.png',
+                'text_images/heart.png',
+                'text_images/kiwi.png',
+                'text_images/lemon.png',
+                'text_images/mirror.png',
+                'text_images/pear.png',
+                'text_images/pepper.png',
+                'text_images/pineapple.png',
+                'text_images/pipe.png',
+                'text_images/potato.png',
+                'text_images/scales.png',
+                'text_images/scissors.png',
+                'text_images/tap.png',
+                'text_images/telephone.png',
+                'text_images/tomato.png',
+                'text_images/umbrella.png'
+            ];
+            
+            showStatus('正在检查图像文件...');
+            
+            // 先检查哪些图片存在
+            const checkPromises = allImagePaths.map(src => checkImageExists(src));
+            const checkResults = await Promise.all(checkPromises);
+            
+            // 只保留存在的图片
+            const existingImages = allImagePaths.filter((src, index) => checkResults[index]);
+            
+            showStatus(`找到 ${existingImages.length} 个图像文件，开始加载...`);
+            
+            // 加载存在的图片
+            const loadPromises = existingImages.map(src => loadImage(src));
+            const results = await Promise.all(loadPromises);
+            const loadedCount = results.filter(img => img !== null).length;
+            
+            showStatus(`图像资源加载完成 (${loadedCount}/${existingImages.length} 个图像成功加载)`);
+        }
+        
+        // 创建游戏画布
+        function createGameCanvas(levelId, conditionType) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 600;
+            canvas.style.border = '1px solid #ddd';
+            
+            const ctx = canvas.getContext('2d');
+            
+            try {
+                // 获取关卡数据
+                const levelData = generateLevel(levelId, conditionType);
+                if (!levelData) {
+                    throw new Error(`无法生成关卡数据: ${levelId}`);
+                }
+                
+                // 创建游戏引擎
+                const gameEngine = new BabaGameEngine(levelData);
+                
+                // 绘制游戏界面
+                drawGameInterface(ctx, gameEngine, levelId, conditionType);
+                
+                return canvas;
+            } catch (error) {
+                console.error(`生成截图失败 ${levelId} (${conditionType}):`, error);
+                // 绘制错误信息
+                ctx.fillStyle = '#f8d7da';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#721c24';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`Error: ${error.message}`, canvas.width/2, canvas.height/2);
+                return canvas;
+            }
+        }
+        
+        // 绘制游戏界面
+        function drawGameInterface(ctx, gameEngine, levelId, conditionType) {
+            const canvas = ctx.canvas;
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // 使用与真实实验相同的背景颜色
+            ctx.fillStyle = '#7d7d7d';
+            ctx.fillRect(0, 0, width, height);
+            
+            // 绘制标题
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${levelId} (${conditionType})`, width/2, 40);
+            
+            // 计算网格尺寸
+            const gridSize = gameEngine.gridSize;
+            const cellSize = Math.min((width - 80) / gridSize[0], (height - 120) / gridSize[1]);
+            const gridStartX = (width - gridSize[0] * cellSize) / 2;
+            const gridStartY = 80;
+            
+            // 绘制网格背景 - 使用与真实实验相同的背景颜色
+            ctx.fillStyle = '#7d7d7d';
+            ctx.fillRect(gridStartX - 10, gridStartY - 10, 
+                        gridSize[0] * cellSize + 20, gridSize[1] * cellSize + 20);
+            
+            // 移除网格线绘制代码，保持与真实实验一致
+            
+            // 绘制游戏对象
+            gameEngine.objects.forEach(obj => {
+                const x = gridStartX + obj.position[0] * cellSize;
+                const y = gridStartY + obj.position[1] * cellSize;
+                
+                // 获取对象图像路径 - 使用与原始游戏相同的路径
+                let imageSrc = null;
+                if (obj.isText) {
+                    // 文本对象使用text_images目录
+                    const textName = obj.type.replace('TEXT_', '').toLowerCase();
+                    imageSrc = `text_images/${textName}.png`;
+                } else {
+                    // 游戏对象使用images目录
+                    imageSrc = `images/${obj.type.toLowerCase()}.png`;
+                }
+                
+                // 尝试加载图像
+                const img = imageCache[imageSrc];
+                
+                if (img && img.complete && img.naturalWidth > 0) {
+                    // 绘制图像 - 填充整个单元格，无边框
+                    ctx.drawImage(img, x, y, cellSize, cellSize);
+                } else {
+                    // 如果图像不存在或加载失败，绘制彩色方块
+                    let color = '#95a5a6';
+                    if (obj.isText) {
+                        color = '#e74c3c';
+                    } else if (obj.isYou) {
+                        color = '#f39c12';
+                    } else if (obj.isWin) {
+                        color = '#f1c40f';
+                    } else if (obj.isStop) {
+                        color = '#3498db';
+                    } else if (obj.isPush) {
+                        color = '#9b59b6';
+                    } else if (obj.isDefeat) {
+                        color = '#e67e22';
+                    } else if (obj.isRed) {
+                        color = '#e74c3c';
+                    } else if (obj.isDestruct || obj.isImpact) {
+                        color = '#8e44ad';
+                    } else if (obj.isShut) {
+                        color = '#16a085';
+                    } else if (obj.isOpen) {
+                        color = '#27ae60';
+                    }
+                    
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                    
+                    // 绘制对象名称
+                    ctx.fillStyle = 'white';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    const objName = obj.type.replace('TEXT_', '');
+                    ctx.fillText(objName, x + cellSize/2, y + cellSize/2 + 4);
+                }
+            });
+            
+            // 绘制规则信息
+            ctx.fillStyle = 'white';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`Rules: ${gameEngine.rules.length}`, 20, height - 60);
+            ctx.fillText(`Objects: ${gameEngine.objects.length}`, 20, height - 40);
+            ctx.fillText(`Grid: ${gridSize[0]}x${gridSize[1]}`, 20, height - 20);
+            
+            // 绘制条件信息
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText(`Condition: ${conditionType}`, width - 20, height - 20);
+        }
+        
+        // 生成单个截图
+        function generateScreenshot(levelId, conditionType) {
+            const canvas = createGameCanvas(levelId, conditionType);
+            
+            // 创建容器
+            const container = document.createElement('div');
+            container.className = 'screenshot-item';
+            
+            // 创建标题
+            const title = document.createElement('h3');
+            title.textContent = `${levelId} (${conditionType})`;
+            container.appendChild(title);
+            
+            // 添加画布
+            container.appendChild(canvas);
+            
+            // 创建下载按钮
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'download-btn';
+            downloadBtn.textContent = '下载';
+            downloadBtn.onclick = () => downloadCanvas(canvas, `${levelId}_${conditionType}.png`);
+            container.appendChild(downloadBtn);
+            
+            // 保存截图信息
+            screenshots.push({
+                levelId,
+                conditionType,
+                canvas,
+                container
+            });
+            
+            return container;
+        }
+        
+        // 生成所有截图
+        async function generateAllScreenshots() {
+            const grid = document.getElementById('screenshot-grid');
+            grid.innerHTML = '';
+            screenshots = [];
+            currentProgress = 0;
+            
+            showStatus('开始生成截图...');
+            
+            // 预加载图像
+            await preloadImages();
+            
+            journeyLevels.forEach(levelId => {
+                conditions.forEach(conditionType => {
+                    try {
+                        const container = generateScreenshot(levelId, conditionType);
+                        grid.appendChild(container);
+                        updateProgress();
+                    } catch (error) {
+                        console.error(`生成截图失败 ${levelId} (${conditionType}):`, error);
+                        showStatus(`生成截图失败: ${levelId} (${conditionType}) - ${error.message}`, 'error');
+                    }
+                });
+            });
+            
+            showStatus(`成功生成 ${screenshots.length} 个截图`);
+        }
+        
+        // 下载单个画布
+        function downloadCanvas(canvas, filename) {
+            try {
+                // 方法1：直接使用原始Canvas
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    showStatus(`成功下载: ${filename}`);
+                }, 'image/png');
+            } catch (error) {
+                console.error('下载失败:', error);
+                showStatus(`下载失败: ${filename}`, 'error');
+                
+                // 备用方案：创建新Canvas
+                try {
+                    const newCanvas = document.createElement('canvas');
+                    newCanvas.width = canvas.width;
+                    newCanvas.height = canvas.height;
+                    const ctx = newCanvas.getContext('2d');
+                    
+                    // 重新绘制内容到新Canvas
+                    ctx.drawImage(canvas, 0, 0);
+                    
+                    newCanvas.toBlob(function(blob) {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = filename;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        showStatus(`成功下载(备用方案): ${filename}`);
+                    }, 'image/png');
+                } catch (blobError) {
+                    console.error('备用下载方案也失败:', blobError);
+                    showStatus(`下载完全失败: ${filename}`, 'error');
+                }
+            }
+        }
+        
+        // 下载所有截图
+        function downloadAllScreenshots() {
+            if (screenshots.length === 0) {
+                showStatus('没有可下载的截图，请先生成截图', 'error');
+                return;
+            }
+            
+            showStatus('开始批量下载截图...');
+            
+            // 使用JSZip创建压缩包
+            if (typeof JSZip !== 'undefined') {
+                createZipDownload();
+            } else {
+                // 如果没有JSZip，使用传统方法
+                traditionalDownload();
+            }
+        }
+        
+        // 创建ZIP文件下载
+        function createZipDownload() {
+            const zip = new JSZip();
+            let processedCount = 0;
+            let totalCount = screenshots.length;
+            
+            // 使用Promise.all来处理所有截图
+            const processPromises = screenshots.map((screenshot, index) => {
+                return new Promise((resolve) => {
+                    const filename = `${screenshot.levelId}_${screenshot.conditionType}.png`;
+                    
+                    try {
+                        // 使用blob方法避免跨域问题
+                        screenshot.canvas.toBlob(function(blob) {
+                            if (blob) {
+                                zip.file(filename, blob);
+                                processedCount++;
+                                showStatus(`处理进度: ${processedCount}/${totalCount}`);
+                            }
+                            resolve();
+                        }, 'image/png');
+                    } catch (error) {
+                        console.error(`处理截图失败 ${filename}:`, error);
+                        showStatus(`处理截图失败: ${filename}`, 'error');
+                        resolve();
+                    }
+                });
+            });
+            
+            Promise.all(processPromises).then(() => {
+                if (processedCount > 0) {
+                    zip.generateAsync({type: 'blob'}).then(function(content) {
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(content);
+                        link.download = 'baba_game_screenshots.zip';
+                        link.click();
+                        URL.revokeObjectURL(link.href);
+                        showStatus(`已创建压缩包下载，包含 ${processedCount} 个截图`);
+                    }).catch(function(error) {
+                        console.error('创建ZIP文件失败:', error);
+                        showStatus('创建ZIP文件失败', 'error');
+                    });
+                } else {
+                    showStatus('没有可用的截图进行下载', 'error');
+                }
+            });
+        }
+        
+        // 传统下载方法
+        function traditionalDownload() {
+            screenshots.forEach((screenshot, index) => {
+                setTimeout(() => {
+                    const filename = `${screenshot.levelId}_${screenshot.conditionType}.png`;
+                    downloadCanvas(screenshot.canvas, filename);
+                }, index * 100); // 延迟下载，避免浏览器阻止
+            });
+            
+            showStatus(`开始下载 ${screenshots.length} 个截图，请检查浏览器下载设置`);
+        }
+        
+        // 逐个下载截图
+        function downloadIndividualScreenshots() {
+            if (screenshots.length === 0) {
+                showStatus('没有可下载的截图，请先生成截图', 'error');
+                return;
+            }
+            
+            showStatus('开始逐个下载截图，请选择保存位置...');
+            
+            screenshots.forEach((screenshot, index) => {
+                setTimeout(() => {
+                    const filename = `${screenshot.levelId}_${screenshot.conditionType}.png`;
+                    downloadCanvas(screenshot.canvas, filename);
+                }, index * 200); // 更长的延迟，让用户有时间选择保存位置
+            });
+        }
+        
+        // 测试下载功能
+        function testDownload() {
+            showStatus('正在测试下载功能...');
+            
+            // 创建一个简单的测试Canvas
+            const testCanvas = document.createElement('canvas');
+            testCanvas.width = 200;
+            testCanvas.height = 100;
+            const ctx = testCanvas.getContext('2d');
+            
+            // 绘制一些测试内容
+            ctx.fillStyle = '#7d7d7d';
+            ctx.fillRect(0, 0, 200, 100);
+            ctx.fillStyle = 'white';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('测试下载功能', 100, 50);
+            
+            try {
+                testCanvas.toBlob(function(blob) {
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'test_download.png';
+                        link.click();
+                        URL.revokeObjectURL(url);
+                        showStatus('测试下载成功！如果看到test_download.png文件，说明下载功能正常。');
+                    } else {
+                        showStatus('测试下载失败：无法创建blob', 'error');
+                    }
+                }, 'image/png');
+            } catch (error) {
+                console.error('测试下载失败:', error);
+                showStatus(`测试下载失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 启动本地服务器
+        function startLocalServer() {
+            showStatus('请按照以下步骤启动本地服务器：', 'success');
+            
+            const instructions = `
+                <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    <h4 style="color: #155724; margin-top: 0;">启动本地服务器步骤：</h4>
+                    <ol style="color: #155724;">
+                        <li>打开命令提示符或PowerShell</li>
+                        <li>导航到项目目录：<br><code style="background: #f8f9fa; padding: 2px 4px; border-radius: 3px;">cd "${window.location.pathname.replace('/screenshot_generator_enhanced.html', '')}"</code></li>
+                        <li>启动Python服务器：<br><code style="background: #f8f9fa; padding: 2px 4px; border-radius: 3px;">python -m http.server 8000</code></li>
+                        <li>在浏览器中访问：<br><code style="background: #f8f9fa; padding: 2px 4px; border-radius: 3px;">http://localhost:8000/screenshot_generator_enhanced.html</code></li>
+                    </ol>
+                </div>
+            `;
+            
+            document.getElementById('status').innerHTML = instructions;
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            showStatus('截图生成器已准备就绪。点击"生成所有截图"开始生成。');
+            
+            // 测试几个关键图片是否能加载
+            testImageLoading();
+            
+            // 报告缺失的图片文件
+            setTimeout(() => {
+                reportMissingImages();
+            }, 1000);
+        });
+        
+        // 报告缺失的图片文件
+        function reportMissingImages() {
+            const cssReferencedImages = [
+                'images/apple.png', 'images/banana.png', 'images/battery.png', 'images/bone.png',
+                'images/bottle.png', 'images/carrot.png', 'images/chair.png', 'images/cherry.png',
+                'images/flag.png', 'images/glasses.png', 'images/glove.png', 'images/hat.png',
+                'images/heart.png', 'images/kiwi.png', 'images/lemon.png', 'images/mirror.png',
+                'images/pear.png', 'images/pepper.png', 'images/pineapple.png', 'images/pipe.png',
+                'images/potato.png', 'images/scales.png', 'images/scissors.png', 'images/tap.png',
+                'images/telephone.png', 'images/tomato.png', 'images/umbrella.png'
+            ];
+            
+            console.log('检查CSS引用的图片文件是否存在...');
+            cssReferencedImages.forEach(src => {
+                const img = new Image();
+                img.onload = () => {
+                    console.log(`✓ CSS引用图片存在: ${src}`);
+                };
+                img.onerror = () => {
+                    console.warn(`✗ CSS引用图片缺失: ${src}`);
+                };
+                img.src = src;
+            });
+        }
+        
+        // 测试图片加载
+        function testImageLoading() {
+            const testImages = [
+                'images/pumpkin.png',
+                'text_images/is.png',
+                'images/sun.png'
+            ];
+            
+            testImages.forEach(src => {
+                const img = new Image();
+                img.onload = () => {
+                    console.log(`✓ 图片加载成功: ${src}`);
+                };
+                img.onerror = () => {
+                    console.warn(`✗ 图片加载失败: ${src}`);
+                };
+                img.src = src;
+            });
+        }
+    </script>
+</body>
+</html> 

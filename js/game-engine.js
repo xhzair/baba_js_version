@@ -468,8 +468,10 @@ class BabaGameEngine {
                 chainObj.position[0] + direction[0],
                 chainObj.position[1] + direction[1]
             ];
-            // Mark as recently moved object
-            this.recentlyMovedObjects.add(chainObj);
+            // Mark as recently moved object (only non-YOU objects)
+            if (!chainObj.isYou) {
+                this.recentlyMovedObjects.add(chainObj);
+            }
         }
         
         return true;
@@ -1022,6 +1024,15 @@ class BabaGameEngine {
             return operationType;
         }
         
+        // 添加调试信息
+        console.log('=== classifyOperationType DEBUG ===');
+        console.log('movedObjects:', movedObjects.map(obj => ({
+            type: obj.type,
+            isText: obj.isText,
+            is_text: obj.is_text,
+            position: obj.position
+        })));
+        
         // additional debug: check if any overlap objects actually have WIN property
         if (overlapObjects && overlapObjects.length > 0) {
             const winObjectsInOverlap = overlapObjects.filter(obj => 
@@ -1062,12 +1073,20 @@ class BabaGameEngine {
         const textObjects = movedObjects.filter(obj => obj.is_text);
         const nonTextObjects = movedObjects.filter(obj => !obj.is_text);
         
+        console.log('textObjects count:', textObjects.length);
+        console.log('nonTextObjects count:', nonTextObjects.length);
+        console.log('textObjects:', textObjects.map(obj => obj.type));
+        console.log('nonTextObjects:', nonTextObjects.map(obj => obj.type));
+        
         if (textObjects.length > 0 && nonTextObjects.length === 0) {
+            console.log('Returning: push_text');
             return "push_text";
         } else if (nonTextObjects.length > 0) {
+            console.log('Returning: push_object');
             return "push_object";
         }
         
+        console.log('Returning: move_only');
         return "move_only";
     }
     

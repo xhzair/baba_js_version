@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Baba Game Debug - tutorial_2</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; }
+    #game-container { display: flex; }
+    #canvasWrap { flex: 0 0 auto; border: 1px solid #ccc; margin: 8px; }
+    #log { flex: 1 1 auto; padding: 8px; max-height: 600px; overflow-y: auto; white-space: pre-line; background:#f7f7f7; }
+    .entry{ margin-bottom:4px; }
+  </style>
+</head>
+<body>
+  <h2>Baba Game Debug – tutorial_2</h2>
+  <p>Use arrow keys to move. 每次移动后会在右侧显示 engine 识别的 <code>content_type</code> 与 <code>rule_effect</code>。</p>
+  <p>按 <code>Z</code> 键执行 Undo 操作。</p>
+  <div id="game-container">
+    <div id="canvasWrap"><canvas id="gameCanvas" width="640" height="640"></canvas></div>
+    <div id="log"></div>
+  </div>
+
+  <!-- 关卡数据与引擎 -->
+  <script src="./js/level-data.js"></script>
+  <script src="./js/game-engine.js"></script>
+  <script>
+  // 从 level-data.js 中获取关卡数据，无需网络请求
+  function loadLevel(levelId){
+    const allLevels = getAllLevels();
+    const all = [...allLevels.tutorial, ...allLevels.journey];
+    const level = all.find(l => l.level_id === levelId);
+    if(!level) throw new Error('Level not found');
+    return level;
+  }
+
+  // 简易渲染：方块大小
+  const TILE = 32;
+  const ctx = document.getElementById('gameCanvas').getContext('2d');
+
+  function draw(engine){
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    engine.objects.forEach(obj=>{
+      ctx.fillStyle = obj.isText ? '#ffce54':'#4fc1e9';
+      ctx.fillRect(obj.position[0]*TILE, obj.position[1]*TILE, TILE-2, TILE-2);
+      ctx.fillStyle = '#000';
+      ctx.fillText(obj.type.substr(0,3), obj.position[0]*TILE+4, obj.position[1]*TILE+16);
+    });
+  }
+
+  function appendLog(text){
+    const log = document.getElementById('log');
+    const div = document.createElement('div');
+    div.className='entry';
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  (async ()=>{
+    const levelData = loadLevel('journey_grammar');
+    const engine = new BabaGameEngine(levelData, 480);
+    draw(engine);
+
+    document.addEventListener('keydown', e=>{
+      const keyMap = {ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+      
+      // 处理 Undo 操作
+      if(e.key.toLowerCase() === 'z'){
+        e.preventDefault();
+        engine.undo();
+        draw(engine);
+        const last = engine.lastOperationAnalysis;
+        if(last){
+          appendLog(`Undo | content_type: ${last.content_type} | rule_effect: ${last.rules_affected?.effect}`);
+        }
+        return;
+      }
+      
+      // 处理方向键移动
+      if(!(e.key in keyMap)) return;
+      e.preventDefault();
+      const dir = keyMap[e.key];
+      engine.processMove(dir);
+      draw(engine);
+      const last = engine.lastOperationAnalysis;
+      if(last){
+        appendLog(`Move#${last.move_number ?? '-'} | content_type: ${last.content_type} | rule_effect: ${last.rules_affected?.effect}`);
+      }
+    });
+  })();
+  </script>
+</body>
+</html> 

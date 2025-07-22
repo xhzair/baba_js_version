@@ -560,7 +560,7 @@ function generateLevel(templateId, conditionType = 'high-prior') {
     if (isTutorial) {
         objMapping = LEVEL_DATA.experimental_conditions.default;
     } else {
-        objMapping = window.getExperimentalCondition ? 
+        objMapping = (typeof window !== 'undefined' && window.getExperimentalCondition) ? 
                      window.getExperimentalCondition(templateId, conditionType) :
                      LEVEL_DATA.experimental_conditions.default;
     }
