@@ -170,7 +170,6 @@ const EXPERIMENTAL_CONDITIONS = {
 function getExperimentalCondition(levelId, conditionType = 'high-prior') {
     // Extract basic ID of the level (remove journey_ prefix)
     const baseId = levelId.startsWith('journey_') ? levelId : null;
-    
     // If specific level condition configuration is found
     if (baseId && EXPERIMENTAL_CONDITIONS[baseId] && EXPERIMENTAL_CONDITIONS[baseId][conditionType]) {
         // Merge default condition and specific condition
@@ -179,7 +178,6 @@ function getExperimentalCondition(levelId, conditionType = 'high-prior') {
             ...EXPERIMENTAL_CONDITIONS[baseId][conditionType]
         };
     }
-    
     // If no specific configuration is found, return default configuration
     return EXPERIMENTAL_CONDITIONS.default;
 }

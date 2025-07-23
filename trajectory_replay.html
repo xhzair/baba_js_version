@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Baba Game 轨迹复现工具</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .controls {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    label {
+      font-weight: bold;
+      color: #555;
+    }
+    select, input, button {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .game-container { 
+      display: flex; 
+      gap: 20px;
+      margin-top: 20px;
+    }
+    #canvasWrap { 
+      flex: 0 0 auto; 
+      border: 2px solid #ccc; 
+      border-radius: 5px;
+      background: white;
+    }
+    #log { 
+      flex: 1 1 auto; 
+      padding: 15px; 
+      max-height: 600px; 
+      overflow-y: auto; 
+      white-space: pre-line; 
+      background: #f9f9f9;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+    .entry{ 
+      margin-bottom: 8px; 
+      padding: 5px;
+      border-left: 3px solid #4CAF50;
+      background: white;
+    }
+    .meta-entry {
+      border-left-color: #ff9800;
+    }
+    .error-entry {
+      border-left-color: #f44336;
+    }
+    .replay-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      justify-content: center;
+    }
+    .speed-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .progress-info {
+      text-align: center;
+      margin: 10px 0;
+      font-weight: bold;
+      color: #666;
+    }
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .file-input-wrapper input[type=file] {
+      position: absolute;
+      left: -9999px;
+    }
+    .file-input-wrapper label {
+      display: inline-block;
+      padding: 8px 12px;
+      background-color: #2196F3;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .file-input-wrapper label:hover {
+      background-color: #1976D2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Baba Game 轨迹复现工具</h1>
+    
+    <div class="controls">
+      <div class="control-group">
+        <label for="fileInput">选择数据文件 (CSV):</label>
+        <div class="file-input-wrapper">
+          <input type="file" id="fileInput" accept=".csv" />
+          <label for="fileInput">选择文件</label>
+        </div>
+      </div>
+      
+      <div class="control-group">
+        <label for="participantSelect">被试ID:</label>
+        <select id="participantSelect" disabled>
+          <option value="">请先选择文件</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label for="levelSelect">关卡ID:</label>
+        <select id="levelSelect" disabled>
+          <option value="">请先选择被试</option>
+        </select>
+      </div>
+      
+       <div class="control-group">
+         <label>当前操作: <span id="currentOperation">-</span></label>
+       </div>
+    </div>
+    
+    <div class="replay-controls">
+      <button id="loadBtn" disabled>加载游戏</button>
+      <button id="playBtn" disabled>播放</button>
+      <button id="pauseBtn" disabled>暂停</button>
+      <button id="resetBtn" disabled>重置</button>
+      <button id="stepBtn" disabled>单步</button>
+      <div class="speed-control">
+        <label for="speedSelect">速度:</label>
+        <select id="speedSelect">
+          <option value="0.5">0.5x</option>
+          <option value="1" selected>1x</option>
+          <option value="2">2x</option>
+          <option value="5">5x</option>
+          <option value="10">10x</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="progress-info" id="progressInfo" style="display: none;">
+      进度: <span id="currentStep">0</span> / <span id="totalSteps">0</span>
+    </div>
+    
+    <div class="game-container">
+      <div id="canvasWrap">
+        <canvas id="gameCanvas" width="640" height="640" style="background:#7d7d7d;"></canvas>
+      </div>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <!-- 关卡数据与引擎 -->
+  <script src="./js/experimental-conditions.js"></script>
+  <script src="./js/level-data.js"></script>
+  <script src="./js/game-engine.js"></script>
+  <script>
+     // 全局变量
+   let currentEngine = null;
+   let trajectoryData = [];
+   let currentStep = 0;
+   let isPlaying = false;
+   let playInterval = null;
+   let csvData = [];
+   let imageCache = {};
+   // 移除 gameStateHistory、saveGameState、restoreGameState 相关定义和实现
+
+  
+  // DOM 元素
+  const fileInput = document.getElementById('fileInput');
+  const participantSelect = document.getElementById('participantSelect');
+  const levelSelect = document.getElementById('levelSelect');
+  const currentOperationSpan = document.getElementById('currentOperation');
+
+  const loadBtn = document.getElementById('loadBtn');
+  const playBtn = document.getElementById('playBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const stepBtn = document.getElementById('stepBtn');
+  const speedSelect = document.getElementById('speedSelect');
+  const progressInfo = document.getElementById('progressInfo');
+  const currentStepSpan = document.getElementById('currentStep');
+  const totalStepsSpan = document.getElementById('totalSteps');
+  const log = document.getElementById('log');
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // 从 level-data.js 中获取关卡数据
+  function loadLevel(levelId, conditionType = 'high-prior') {
+    // 只生成当前关卡
+    if (typeof generateLevel === 'function') {
+      return generateLevel(levelId, conditionType);
+    }
+    throw new Error(`关卡 ${levelId} 未找到`);
+  }
+
+  // 游戏渲染：方块大小
+  const TILE = 32;
+
+
+
+  // 保存游戏状态
+  // 移除 gameStateHistory、saveGameState、restoreGameState 相关定义和实现
+
+  // 检查图片是否存在
+  function checkImageExists(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = src;
+    });
+  }
+
+  // 加载图片
+  function loadImage(src) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        imageCache[src] = img;
+        resolve(img);
+      };
+      img.onerror = () => {
+        resolve(null);
+      };
+      img.src = src;
+    });
+  }
+
+  // 预加载图片
+  async function preloadImages() {
+    // 定义所有可能的图片路径
+    const allImagePaths = [
+      // 游戏对象图像
+      'images/pumpkin.png',
+      'images/sun.png',
+      'images/dice.png',
+      'images/cloud.png',
+      'images/bomb.png',
+      'images/chain.png',
+      'images/anchor.png',
+      'images/fan.png',
+      'images/door.png',
+      'images/key.png',
+      'images/tree.png',
+      'images/rose.png',
+      'images/candle.png',
+      'images/pool.png',
+      'images/balloon.png',
+      // 红色对象图像
+      'images_red/pumpkin.png',
+      'images_red/sun.png',
+      'images_red/dice.png',
+      'images_red/cloud.png',
+      'images_red/bomb.png',
+      'images_red/chain.png',
+      'images_red/anchor.png',
+      'images_red/fan.png',
+      'images_red/door.png',
+      'images_red/key.png',
+      'images_red/tree.png',
+      'images_red/rose.png',
+      'images_red/candle.png',
+      'images_red/pool.png',
+      'images_red/balloon.png',
+      // 文本图像
+      'text_images/pumpkin.png',
+      'text_images/is.png',
+      'text_images/you.png',
+      'text_images/win.png',
+      'text_images/stop.png',
+      'text_images/push.png',
+      'text_images/defeat.png',
+      'text_images/destruct.png',
+      'text_images/impact.png',
+      'text_images/shut.png',
+      'text_images/open.png',
+      'text_images/red.png',
+      'text_images/if.png',
+      'text_images/feeling.png',
+      'text_images/sun.png',
+      'text_images/dice.png',
+      'text_images/cloud.png',
+      'text_images/bomb.png',
+      'text_images/chain.png',
+      'text_images/anchor.png',
+      'text_images/fan.png',
+      'text_images/door.png',
+      'text_images/key.png',
+      'text_images/tree.png',
+      'text_images/rose.png',
+      'text_images/candle.png',
+      'text_images/pool.png',
+      'text_images/balloon.png'
+    ];
+    
+    // 先检查哪些图片存在
+    const checkPromises = allImagePaths.map(src => checkImageExists(src));
+    const checkResults = await Promise.all(checkPromises);
+    
+    // 只保留存在的图片
+    const existingImages = allImagePaths.filter((src, index) => checkResults[index]);
+    
+    // 加载存在的图片
+    const loadPromises = existingImages.map(src => loadImage(src));
+    const results = await Promise.all(loadPromises);
+    const loadedCount = results.filter(img => img !== null).length;
+    
+  }
+
+  function draw(engine) {
+    if (!engine) return;
+    
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    
+    // 绘制网格背景
+    ctx.strokeStyle = '#eee';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= engine.gridSize[0]; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * TILE, 0);
+      ctx.lineTo(x * TILE, engine.gridSize[1] * TILE);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= engine.gridSize[1]; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * TILE);
+      ctx.lineTo(engine.gridSize[0] * TILE, y * TILE);
+      ctx.stroke();
+    }
+    
+    // 绘制对象
+    engine.objects.forEach(obj => {
+      const x = obj.position[0] * TILE;
+      const y = obj.position[1] * TILE;
+      
+      // 获取对象类型（移除TEXT_前缀）
+      let objectType = obj.type.replace('TEXT_', '').toLowerCase();
+      
+      // 获取对象图像路径 - 只用标准图片
+      let imageSrc = null;
+      if (obj.isText) {
+        // 文本对象使用text_images目录
+        const textName = obj.type.replace('TEXT_', '').toLowerCase();
+        imageSrc = `text_images/${textName}.png`;
+      } else if (obj.isRed) {
+        // isRed对象优先用images_red目录
+        const redPath = `images_red/${objectType}.png`;
+        if (imageCache[redPath]) {
+          imageSrc = redPath;
+        } else {
+          imageSrc = `images/${objectType}.png`;
+        }
+      } else {
+        imageSrc = `images/${objectType}.png`;
+      }
+      
+      // 尝试加载图像
+      const img = imageCache[imageSrc];
+      let drawSuccess = false;
+      
+      if (img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        try {
+          ctx.drawImage(img, x, y, TILE, TILE);
+          drawSuccess = true;
+        } catch (error) {
+          // 图片未加载完成或绘制失败，使用颜色方块
+          drawColorBlock();
+        }
+      } else {
+        // 图片未加载完成或绘制失败，使用颜色方块
+        drawColorBlock();
+      }
+      
+      function drawColorBlock() {
+        // 如果图片不存在，使用颜色方块作为后备
+        let color = obj.isText ? '#ffce54' : '#4fc1e9';
+        
+        // 根据属性设置颜色
+        if (obj.isYou) color = '#e74c3c';
+        if (obj.isWin) color = '#f39c12';
+        if (obj.isStop) color = '#95a5a6';
+        if (obj.isPush) color = '#3498db';
+        if (obj.isDefeat) color = '#8e44ad';
+        if (obj.isRed) color = '#e74c3c';
+        if (obj.isDestruct) color = '#c0392b';
+        if (obj.isShut) color = '#2c3e50';
+        if (obj.isOpen) color = '#27ae60';
+        
+        ctx.fillStyle = color;
+        ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+        
+        // 绘制边框
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 1, y + 1, TILE - 2, TILE - 2);
+        
+        // 绘制文字
+        ctx.fillStyle = '#000';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const text = obj.type.replace('TEXT_', '').substr(0, 3);
+        ctx.fillText(text, x + TILE/2, y + TILE/2);
+      }
+      
+    });
+  }
+
+  function appendLog(text, type = 'normal') {
+    const div = document.createElement('div');
+    div.className = `entry ${type}-entry`;
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function clearLog() {
+    log.innerHTML = '';
+  }
+
+  // 文件处理
+  fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        csvData = parseCSV(e.target.result);
+        updateParticipantSelect();
+        appendLog(`文件加载成功: ${file.name}`, 'normal');
+      } catch (error) {
+        appendLog(`文件解析错误: ${error.message}`, 'error');
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  function parseCSV(csvText) {
+    const lines = csvText.split('\n');
+    if (lines.length < 2) {
+      throw new Error('CSV文件格式错误');
+    }
+    
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+    const data = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      if (lines[i].trim() === '') continue;
+      
+      const values = parseCSVLine(lines[i]);
+      if (values.length === headers.length) {
+        const row = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index];
+        });
+        data.push(row);
+      }
+    }
+    
+    return data;
+  }
+
+  function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    result.push(current.trim());
+    return result;
+  }
+
+  function updateParticipantSelect() {
+    const participants = [...new Set(csvData.map(row => row.participant_id).filter(id => id))];
+    participantSelect.innerHTML = '<option value="">选择被试ID</option>';
+    participants.forEach(id => {
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = id;
+      participantSelect.appendChild(option);
+    });
+    participantSelect.disabled = false;
+  }
+
+  participantSelect.addEventListener('change', function() {
+    const participantId = this.value;
+    if (!participantId) {
+      levelSelect.innerHTML = '<option value="">请先选择被试</option>';
+      levelSelect.disabled = true;
+      return;
+    }
+    
+    const levels = [...new Set(
+      csvData
+        .filter(row => row.participant_id === participantId)
+        .map(row => row.level_id)
+        .filter(id => id)
+    )];
+    
+    levelSelect.innerHTML = '<option value="">选择关卡ID</option>';
+    levels.forEach(id => {
+      const option = document.createElement('option');
+      option.value = id;
+      option.textContent = id;
+      levelSelect.appendChild(option);
+    });
+    levelSelect.disabled = false;
+  });
+
+     levelSelect.addEventListener('change', function() {
+     const participantId = participantSelect.value;
+     const levelId = this.value;
+     if (!participantId || !levelId) {
+       loadBtn.disabled = true;
+       return;
+     }
+     
+     // 检查是否有可用的数据
+     const availableData = csvData.filter(row => 
+       row.participant_id === participantId && row.level_id === levelId
+     );
+     
+     if (availableData.length > 0) {
+       loadBtn.disabled = false;
+       const operationIds = availableData.map(row => parseInt(row.operation_id) || 0);
+       const minOpId = Math.min(...operationIds);
+       const maxOpId = Math.max(...operationIds);
+       currentOperationSpan.textContent = `操作ID范围: ${minOpId} - ${maxOpId} (共${availableData.length}步)`;
+     } else {
+       loadBtn.disabled = true;
+       currentOperationSpan.textContent = '无可用数据';
+     }
+   });
+
+     // 加载游戏
+   loadBtn.addEventListener('click', async function() {
+     const participantId = participantSelect.value;
+     const levelId = levelSelect.value;
+     
+     if (!participantId || !levelId) {
+       appendLog('请选择被试和关卡', 'error');
+       return;
+     }
+     
+     // 检查是否有可用的数据
+     trajectoryData = csvData.filter(row => 
+       row.participant_id === participantId && row.level_id === levelId
+     ).sort((a, b) => {
+       const timeA = parseInt(a.operation_since_start_ms) || 0;
+       const timeB = parseInt(b.operation_since_start_ms) || 0;
+       return timeA - timeB;
+     });
+     
+     if (trajectoryData.length === 0) {
+       appendLog('没有找到可用的数据', 'error');
+       return;
+     }
+     
+     try {
+       appendLog('正在加载图片资源...', 'normal');
+       
+       // 预加载图片
+       await preloadImages();
+       
+       // 动态获取 condition_type，优先找第一个非空的
+       let conditionType = 'high-prior';
+       for (let i = 0; i < trajectoryData.length; i++) {
+         if (trajectoryData[i].condition_type && trajectoryData[i].condition_type.trim() !== '') {
+           const ct = trajectoryData[i].condition_type.trim().toLowerCase();
+           if (ct === 'high-prior' || ct === 'low-prior') {
+             conditionType = ct;
+             break;
+           }
+         }
+       }
+       if (conditionType !== 'high-prior' && conditionType !== 'low-prior') {
+         console.warn('conditionType 非法，已自动fallback到 high-prior:', conditionType);
+         conditionType = 'high-prior';
+       }
+       // 加载关卡数据
+       const levelData = loadLevel(levelId, conditionType);
+       // 创建游戏引擎
+       currentEngine = new BabaGameEngine(levelData, 480);
+       // 在加载游戏后，创建引擎后不再调用 saveGameState
+       draw(currentEngine);
+       
+       // 获取轨迹数据
+       trajectoryData = csvData.filter(row => 
+         row.participant_id === participantId && row.level_id === levelId
+       ).sort((a, b) => {
+         const timeA = parseInt(a.operation_since_start_ms) || 0;
+         const timeB = parseInt(b.operation_since_start_ms) || 0;
+         return timeA - timeB;
+       });
+       
+       currentStep = 0;
+       totalStepsSpan.textContent = trajectoryData.length;
+       currentStepSpan.textContent = currentStep;
+       progressInfo.style.display = 'block';
+       
+       clearLog();
+       appendLog(`游戏加载成功: ${levelData.name}`, 'normal');
+       appendLog(`轨迹数据: ${trajectoryData.length} 步`, 'normal');
+       
+       // 统计已加载的图片
+       const loadedImages = Object.values(imageCache).filter(img => img !== null).length;
+       appendLog(`图片加载: ${loadedImages} 个`, 'normal');
+       
+       // 启用控制按钮
+       playBtn.disabled = false;
+       resetBtn.disabled = false;
+       stepBtn.disabled = false;
+       pauseBtn.disabled = true;
+       
+     } catch (error) {
+       appendLog(`加载游戏失败: ${error.message}`, 'error');
+     }
+   });
+
+  // 播放控制
+  playBtn.addEventListener('click', function() {
+    // 如果已经播放完成或重置，从第一步开始
+    if (currentStep >= trajectoryData.length) {
+      currentStep = 0;
+      currentStepSpan.textContent = currentStep;
+      
+      // 清空状态历史
+      // 移除 gameStateHistory、saveGameState、restoreGameState 相关定义和实现
+      
+      // 重置游戏状态
+      if (currentEngine) {
+        currentEngine.restart();
+        draw(currentEngine);
+      }
+      
+      clearLog();
+      appendLog('开始播放轨迹...', 'normal');
+    }
+    
+    isPlaying = true;
+    playBtn.disabled = true;
+    pauseBtn.disabled = false;
+    stepBtn.disabled = true;
+    
+    const speed = parseFloat(speedSelect.value);
+    const interval = 1000 / speed; // 基础间隔1秒
+    
+    playInterval = setInterval(() => {
+      executeStep();
+    }, interval);
+  });
+
+  pauseBtn.addEventListener('click', pause);
+
+  function pause() {
+    isPlaying = false;
+    if (playInterval) {
+      clearInterval(playInterval);
+      playInterval = null;
+    }
+    playBtn.disabled = false;
+    pauseBtn.disabled = true;
+    stepBtn.disabled = false;
+  }
+
+  resetBtn.addEventListener('click', function() {
+    pause();
+    currentStep = 0;
+    currentStepSpan.textContent = currentStep;
+    
+    // 清空状态历史
+    // 移除 gameStateHistory、saveGameState、restoreGameState 相关定义和实现
+    
+    // 重置游戏状态
+    if (currentEngine) {
+      currentEngine.restart();
+      // 在resetBtn事件中，重置游戏后不再调用 saveGameState
+      draw(currentEngine);
+    }
+    
+    clearLog();
+    appendLog('游戏已重置', 'normal');
+  });
+
+  stepBtn.addEventListener('click', function() {
+    if (currentStep < trajectoryData.length) {
+      executeStep();
+    } else {
+      appendLog('已到达轨迹末尾，点击播放按钮重新开始', 'normal');
+    }
+  });
+
+  function executeStep() {
+    if (currentStep >= trajectoryData.length) {
+      appendLog('轨迹播放完成', 'normal');
+      pause();
+      return;
+    }
+
+    const step = trajectoryData[currentStep];
+
+    const dirX = parseInt(step.dir_x) || 0;
+    const dirY = parseInt(step.dir_y) || 0;
+    const contentType = step.content_type;
+
+    try {
+      if (contentType && contentType.toLowerCase() === 'undo') {
+        // 直接调用引擎自带的undo
+        currentEngine.undo();
+        appendLog(`步骤 ${currentStep + 1}: Undo操作 - 已恢复到上一步状态`, 'meta');
+      } else if (dirX !== 0 || dirY !== 0) {
+        // 移动操作前不再调用saveState，processMove内部已处理
+        const direction = [dirX, dirY];
+        const success = currentEngine.processMove(direction);
+        const directionName = getDirectionName(direction);
+        const status = success ? '成功' : '失败';
+        appendLog(`步骤 ${currentStep + 1}: 移动 ${directionName} (${status})`, 'normal');
+      } else {
+        appendLog(`步骤 ${currentStep + 1}: 无操作`, 'normal');
+      }
+
+      draw(currentEngine);
+
+    } catch (error) {
+      appendLog(`步骤 ${currentStep + 1} 执行错误: ${error.message}`, 'error');
+    }
+
+    currentStep++;
+    currentStepSpan.textContent = currentStep;
+
+    if (currentStep >= trajectoryData.length) {
+      appendLog('轨迹播放完成', 'normal');
+      pause();
+    }
+  }
+
+  function getDirectionName(direction) {
+    const [x, y] = direction;
+    if (x === 0 && y === -1) return '上';
+    if (x === 0 && y === 1) return '下';
+    if (x === -1 && y === 0) return '左';
+    if (x === 1 && y === 0) return '右';
+    return `[${x}, ${y}]`;
+  }
+
+  // 速度控制
+  speedSelect.addEventListener('change', function() {
+    if (isPlaying) {
+      pause();
+      playBtn.click();
+    }
+  });
+
+     // 初始化
+   appendLog('轨迹复现工具已就绪，请选择数据文件', 'normal');
+   
+   // 预加载基础图片
+   preloadImages().then(() => {
+     appendLog('基础图片资源加载完成', 'normal');
+   }).catch(() => {
+     appendLog('部分图片资源加载失败，将使用颜色方块显示', 'normal');
+   });
+  </script>
+</body>
+</html> 

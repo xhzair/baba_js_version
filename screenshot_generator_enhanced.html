@@ -273,6 +273,22 @@
                 'images/candle.png',
                 'images/pool.png',
                 'images/balloon.png',
+                // 红色对象图像
+                'images_red/pumpkin.png',
+                'images_red/sun.png',
+                'images_red/dice.png',
+                'images_red/cloud.png',
+                'images_red/bomb.png',
+                'images_red/chain.png',
+                'images_red/anchor.png',
+                'images_red/fan.png',
+                'images_red/door.png',
+                'images_red/key.png',
+                'images_red/tree.png',
+                'images_red/rose.png',
+                'images_red/candle.png',
+                'images_red/pool.png',
+                'images_red/balloon.png',
                 // 文本图像
                 'text_images/pumpkin.png',
                 'text_images/is.png',
@@ -425,8 +441,17 @@
                     const textName = obj.type.replace('TEXT_', '').toLowerCase();
                     imageSrc = `text_images/${textName}.png`;
                 } else {
-                    // 游戏对象使用images目录
-                    imageSrc = `images/${obj.type.toLowerCase()}.png`;
+                    if (obj.isRed) {
+                        // 优先用红色图片
+                        const redPath = `images_red/${obj.type.toLowerCase()}.png`;
+                        if (imageCache[redPath]) {
+                            imageSrc = redPath;
+                        } else {
+                            imageSrc = `images/${obj.type.toLowerCase()}.png`;
+                        }
+                    } else {
+                        imageSrc = `images/${obj.type.toLowerCase()}.png`;
+                    }
                 }
                 
                 // 尝试加载图像

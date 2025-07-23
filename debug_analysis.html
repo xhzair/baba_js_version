@@ -12,7 +12,7 @@
   </style>
 </head>
 <body>
-  <h2>Baba Game Debug – tutorial_2</h2>
+  <h2>Baba Game Debug</h2>
   <p>Use arrow keys to move. 每次移动后会在右侧显示 engine 识别的 <code>content_type</code> 与 <code>rule_effect</code>。</p>
   <p>按 <code>Z</code> 键执行 Undo 操作。</p>
   <div id="game-container">
@@ -57,7 +57,7 @@
   }
 
   (async ()=>{
-    const levelData = loadLevel('journey_grammar');
+    const levelData = loadLevel('journey_break');
     const engine = new BabaGameEngine(levelData, 480);
     draw(engine);
 
