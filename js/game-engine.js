@@ -518,7 +518,6 @@ class BabaGameEngine {
                 
                 if (hasTextInChain || hasOpenInChain) {
                     // TEXT objects or OPEN objects can pass through SHUT
-                    return chain;
                 } else {
                     return null; // Blocked by SHUT
                 }

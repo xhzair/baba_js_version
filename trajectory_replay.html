@@ -600,13 +600,31 @@
      }
      
      // 检查是否有可用的数据
-     trajectoryData = csvData.filter(row => 
+     let rawData = csvData.filter(row => 
        row.participant_id === participantId && row.level_id === levelId
-     ).sort((a, b) => {
+     );
+     
+     // 去重：基于operation_id去重，保留最新的记录
+     const uniqueData = new Map();
+     rawData.forEach(row => {
+       const opId = parseInt(row.operation_id) || 0;
+       if (!uniqueData.has(opId) || 
+           parseInt(row.operation_since_start_ms) > parseInt(uniqueData.get(opId).operation_since_start_ms)) {
+         uniqueData.set(opId, row);
+       }
+     });
+     
+     trajectoryData = Array.from(uniqueData.values()).sort((a, b) => {
        const timeA = parseInt(a.operation_since_start_ms) || 0;
        const timeB = parseInt(b.operation_since_start_ms) || 0;
        return timeA - timeB;
      });
+     
+     // 检查数据质量
+     const duplicateOps = rawData.length - trajectoryData.length;
+     if (duplicateOps > 0) {
+       appendLog(`数据去重: 移除了 ${duplicateOps} 个重复操作`, 'meta');
+     }
      
      if (trajectoryData.length === 0) {
        appendLog('没有找到可用的数据', 'error');
@@ -761,6 +779,12 @@
     const contentType = step.content_type;
 
     try {
+      // 检查当前状态是否有非法文字重叠
+      if (currentEngine.checkForObjectOverlaps()) {
+        appendLog(`步骤 ${currentStep + 1}: 警告 - 检测到非法文字重叠！`, 'error');
+        console.warn('非法文字重叠详情:', currentEngine.objects);
+      }
+      
       if (contentType && contentType.toLowerCase() === 'undo') {
         // 直接调用引擎自带的undo
         currentEngine.undo();
@@ -775,6 +799,9 @@
       } else {
         appendLog(`步骤 ${currentStep + 1}: 无操作`, 'normal');
       }
+
+      // 验证游戏状态
+      validateGameState(currentEngine, currentStep + 1);
 
       draw(currentEngine);
 
@@ -798,6 +825,39 @@
     if (x === -1 && y === 0) return '左';
     if (x === 1 && y === 0) return '右';
     return `[${x}, ${y}]`;
+  }
+  
+  function validateGameState(engine, stepNumber) {
+    // 验证游戏状态完整性
+    const issues = [];
+    
+    // 检查非法文字重叠（只有文字-文字重叠是非法）
+    if (engine.checkForObjectOverlaps()) {
+      issues.push('非法文字重叠（多个文字在同一位置）');
+    }
+    
+    // 检查对象位置是否在网格范围内
+    engine.objects.forEach(obj => {
+      if (obj.position[0] < 0 || obj.position[0] >= engine.gridSize[0] ||
+          obj.position[1] < 0 || obj.position[1] >= engine.gridSize[1]) {
+        issues.push(`对象 ${obj.type} 位置超出网格范围: [${obj.position[0]}, ${obj.position[1]}]`);
+      }
+    });
+    
+    // 检查是否有重复的对象ID（如果有的话）
+    const objectTypes = engine.objects.map(obj => `${obj.type}_${obj.position[0]}_${obj.position[1]}`);
+    const uniqueTypes = new Set(objectTypes);
+    if (objectTypes.length !== uniqueTypes.size) {
+      issues.push('存在重复的对象');
+    }
+    
+    if (issues.length > 0) {
+      appendLog(`步骤 ${stepNumber}: 状态验证失败 - ${issues.join(', ')}`, 'error');
+      console.warn('状态验证失败详情:', issues, engine.objects);
+      return false;
+    }
+    
+    return true;
   }
 
   // 速度控制
