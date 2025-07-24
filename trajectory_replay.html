@@ -145,9 +145,23 @@
       </div>
       
       <div class="control-group">
+        <label for="ageGroupSelect">年龄组:</label>
+        <select id="ageGroupSelect" disabled>
+          <option value="">请先选择文件</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label for="conditionTypeSelect">条件类型:</label>
+        <select id="conditionTypeSelect" disabled>
+          <option value="">请先选择年龄组</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
         <label for="participantSelect">被试ID:</label>
         <select id="participantSelect" disabled>
-          <option value="">请先选择文件</option>
+          <option value="">请先选择条件类型</option>
         </select>
       </div>
       
@@ -178,6 +192,12 @@
           <option value="5">5x</option>
           <option value="10">10x</option>
         </select>
+      </div>
+      <div class="control-group">
+        <label>
+          <input type="checkbox" id="useRealTime" checked>
+          使用实际时间间隔
+        </label>
       </div>
     </div>
     
@@ -211,6 +231,8 @@
   
   // DOM 元素
   const fileInput = document.getElementById('fileInput');
+  const ageGroupSelect = document.getElementById('ageGroupSelect');
+  const conditionTypeSelect = document.getElementById('conditionTypeSelect');
   const participantSelect = document.getElementById('participantSelect');
   const levelSelect = document.getElementById('levelSelect');
   const currentOperationSpan = document.getElementById('currentOperation');
@@ -221,6 +243,7 @@
   const resetBtn = document.getElementById('resetBtn');
   const stepBtn = document.getElementById('stepBtn');
   const speedSelect = document.getElementById('speedSelect');
+  const useRealTimeCheckbox = document.getElementById('useRealTime');
   const progressInfo = document.getElementById('progressInfo');
   const currentStepSpan = document.getElementById('currentStep');
   const totalStepsSpan = document.getElementById('totalSteps');
@@ -471,7 +494,7 @@
     reader.onload = function(e) {
       try {
         csvData = parseCSV(e.target.result);
-        updateParticipantSelect();
+        updateAgeGroupSelect();
         appendLog(`文件加载成功: ${file.name}`, 'normal');
       } catch (error) {
         appendLog(`文件解析错误: ${error.message}`, 'error');
@@ -527,8 +550,60 @@
     return result;
   }
 
+  function updateAgeGroupSelect() {
+    const ageGroups = [...new Set(csvData.map(row => row.age_group).filter(ag => ag))];
+    ageGroupSelect.innerHTML = '<option value="">选择年龄组</option>';
+    ageGroups.forEach(ag => {
+      const option = document.createElement('option');
+      option.value = ag;
+      option.textContent = ag;
+      ageGroupSelect.appendChild(option);
+    });
+    ageGroupSelect.disabled = false;
+  }
+
+  function updateConditionTypeSelect() {
+    const selectedAgeGroup = ageGroupSelect.value;
+    if (!selectedAgeGroup) {
+      conditionTypeSelect.innerHTML = '<option value="">请先选择年龄组</option>';
+      conditionTypeSelect.disabled = true;
+      return;
+    }
+    
+    const conditionTypes = [...new Set(
+      csvData
+        .filter(row => row.age_group === selectedAgeGroup)
+        .map(row => row.condition_type)
+        .filter(ct => ct)
+    )];
+    
+    conditionTypeSelect.innerHTML = '<option value="">选择条件类型</option>';
+    conditionTypes.forEach(ct => {
+      const option = document.createElement('option');
+      option.value = ct;
+      option.textContent = ct;
+      conditionTypeSelect.appendChild(option);
+    });
+    conditionTypeSelect.disabled = false;
+  }
+
   function updateParticipantSelect() {
-    const participants = [...new Set(csvData.map(row => row.participant_id).filter(id => id))];
+    const selectedAgeGroup = ageGroupSelect.value;
+    const selectedConditionType = conditionTypeSelect.value;
+    
+    if (!selectedAgeGroup || !selectedConditionType) {
+      participantSelect.innerHTML = '<option value="">请先选择条件类型</option>';
+      participantSelect.disabled = true;
+      return;
+    }
+    
+    const participants = [...new Set(
+      csvData
+        .filter(row => row.age_group === selectedAgeGroup && row.condition_type === selectedConditionType)
+        .map(row => row.participant_id)
+        .filter(id => id)
+    )];
+    
     participantSelect.innerHTML = '<option value="">选择被试ID</option>';
     participants.forEach(id => {
       const option = document.createElement('option');
@@ -538,6 +613,26 @@
     });
     participantSelect.disabled = false;
   }
+
+  ageGroupSelect.addEventListener('change', function() {
+    updateConditionTypeSelect();
+    // 重置后续选择器
+    participantSelect.innerHTML = '<option value="">请先选择条件类型</option>';
+    participantSelect.disabled = true;
+    levelSelect.innerHTML = '<option value="">请先选择被试</option>';
+    levelSelect.disabled = true;
+    loadBtn.disabled = true;
+    currentOperationSpan.textContent = '-';
+  });
+
+  conditionTypeSelect.addEventListener('change', function() {
+    updateParticipantSelect();
+    // 重置后续选择器
+    levelSelect.innerHTML = '<option value="">请先选择被试</option>';
+    levelSelect.disabled = true;
+    loadBtn.disabled = true;
+    currentOperationSpan.textContent = '-';
+  });
 
   participantSelect.addEventListener('change', function() {
     const participantId = this.value;
@@ -717,12 +812,19 @@
     pauseBtn.disabled = false;
     stepBtn.disabled = true;
     
-    const speed = parseFloat(speedSelect.value);
-    const interval = 1000 / speed; // 基础间隔1秒
-    
-    playInterval = setInterval(() => {
-      executeStep();
-    }, interval);
+    // 根据设置选择播放方式
+    if (useRealTimeCheckbox.checked) {
+      // 使用实际时间间隔播放
+      executeStepWithRealTime();
+    } else {
+      // 使用固定间隔播放
+      const speed = parseFloat(speedSelect.value);
+      const interval = 1000 / speed; // 基础间隔1秒
+      
+      playInterval = setInterval(() => {
+        executeStep();
+      }, interval);
+    }
   });
 
   pauseBtn.addEventListener('click', pause);
@@ -730,7 +832,12 @@
   function pause() {
     isPlaying = false;
     if (playInterval) {
-      clearInterval(playInterval);
+      // 根据播放方式清除定时器
+      if (useRealTimeCheckbox.checked) {
+        clearTimeout(playInterval); // 实际时间播放使用setTimeout
+      } else {
+        clearInterval(playInterval); // 固定间隔播放使用setInterval
+      }
       playInterval = null;
     }
     playBtn.disabled = false;
@@ -818,6 +925,71 @@
     }
   }
 
+  function executeStepWithRealTime() {
+    if (currentStep >= trajectoryData.length) {
+      appendLog('轨迹播放完成', 'normal');
+      pause();
+      return;
+    }
+
+    const step = trajectoryData[currentStep];
+    const dirX = parseInt(step.dir_x) || 0;
+    const dirY = parseInt(step.dir_y) || 0;
+    const contentType = step.content_type;
+    
+    // 获取实际时间间隔
+    const timeSinceLastMove = parseInt(step.time_since_last_move_ms) || 1000; // 默认1秒
+    const speed = parseFloat(speedSelect.value);
+    const adjustedTime = timeSinceLastMove / speed; // 根据速度调整时间
+
+    try {
+      // 检查当前状态是否有非法文字重叠
+      if (currentEngine.checkForObjectOverlaps()) {
+        appendLog(`步骤 ${currentStep + 1}: 警告 - 检测到非法文字重叠！`, 'error');
+        console.warn('非法文字重叠详情:', currentEngine.objects);
+      }
+      
+      if (contentType && contentType.toLowerCase() === 'undo') {
+        // 直接调用引擎自带的undo
+        currentEngine.undo();
+        appendLog(`步骤 ${currentStep + 1}: Undo操作 - 已恢复到上一步状态 (间隔: ${timeSinceLastMove}ms)`, 'meta');
+      } else if (dirX !== 0 || dirY !== 0) {
+        // 移动操作前不再调用saveState，processMove内部已处理
+        const direction = [dirX, dirY];
+        const success = currentEngine.processMove(direction);
+        const directionName = getDirectionName(direction);
+        const status = success ? '成功' : '失败';
+        appendLog(`步骤 ${currentStep + 1}: 移动 ${directionName} (${status}) - 间隔: ${timeSinceLastMove}ms`, 'normal');
+      } else {
+        appendLog(`步骤 ${currentStep + 1}: 无操作 - 间隔: ${timeSinceLastMove}ms`, 'normal');
+      }
+
+      // 验证游戏状态
+      validateGameState(currentEngine, currentStep + 1);
+
+      draw(currentEngine);
+
+    } catch (error) {
+      appendLog(`步骤 ${currentStep + 1} 执行错误: ${error.message}`, 'error');
+    }
+
+    currentStep++;
+    currentStepSpan.textContent = currentStep;
+
+    if (currentStep >= trajectoryData.length) {
+      appendLog('轨迹播放完成', 'normal');
+      pause();
+      return;
+    }
+
+    // 安排下一步的执行
+    playInterval = setTimeout(() => {
+      if (isPlaying) {
+        executeStepWithRealTime();
+      }
+    }, adjustedTime);
+  }
+
   function getDirectionName(direction) {
     const [x, y] = direction;
     if (x === 0 && y === -1) return '上';
@@ -863,6 +1035,7 @@
   // 速度控制
   speedSelect.addEventListener('change', function() {
     if (isPlaying) {
+      // 重新开始播放以应用新的速度设置
       pause();
       playBtn.click();
     }
