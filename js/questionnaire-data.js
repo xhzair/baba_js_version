@@ -924,6 +924,90 @@ window.embeddedQuestionnaire = [
         ]
     },
     {
+        "id": 34,
+        "source": "DEM",
+        "type": "option",
+        "question": "Do you have any programming experience?",
+        "options": [
+            {
+                "text": "No experience",
+                "value": 1
+            },
+            {
+                "text": "0-1 years",
+                "value": 2
+            },
+            {
+                "text": "1-3 years",
+                "value": 3
+            },
+            {
+                "text": "3 years or more",
+                "value": 4
+            }
+        ]
+    },
+    {
+        "id": 35,
+        "source": "DEM",
+        "type": "option",
+        "question": "In the past week, how many hours on average did you spend using your phone each day?",
+        "options": [
+            {
+                "text": "0-3 hours per day",
+                "value": 1
+            },
+            {
+                "text": "3-5 hours per day",
+                "value": 2
+            },
+            {
+                "text": "5-7 hours per day",
+                "value": 3
+            },
+            {
+                "text": "7-10 hours per day",
+                "value": 4
+            },
+            {
+                "text": "10 hours or more per day",
+                "value": 5
+            }
+        ]
+    },
+    {
+        "id": 36,
+        "source": "DEM",
+        "type": "option",
+        "question": "When you encounter difficulties operating your phone or other electronic devices, what is your primary way to solve the problem?",
+        "options": [
+            {
+                "text": "Ask children, grandchildren or other family members",
+                "value": 1
+            },
+            {
+                "text": "Ask friends/neighbors",
+                "value": 2
+            },
+            {
+                "text": "Search online by yourself",
+                "value": 3
+            },
+            {
+                "text": "Go to phone or electronic device stores and ask staff",
+                "value": 4
+            },
+            {
+                "text": "Give up and stop using",
+                "value": 5
+            },
+            {
+                "text": "Other",
+                "value": 6
+            }
+        ]
+    },
+    {
         "id": "attention_check_1",
         "type": "likert",
         "source": "ATTENTION_CHECK",
