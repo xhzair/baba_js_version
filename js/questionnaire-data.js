@@ -982,7 +982,7 @@ window.embeddedQuestionnaire = [
         "question": "When you encounter difficulties operating your phone or other electronic devices, what is your primary way to solve the problem?",
         "options": [
             {
-                "text": "Ask children, grandchildren or other family members",
+                "text": "Ask family members (e.g., children, grandchildren, parents, etc.)",
                 "value": 1
             },
             {
