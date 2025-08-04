@@ -1441,7 +1441,8 @@ class BabaGameEngine {
             time_since_start_ms: timeSinceStart,
             time_since_last_move_ms: timeSinceLastMove,
             is_meta_operation: true,
-            meta_type: "reset",
+            meta_type: "restart",  // 改为 "restart"，与 content_type 保持一致
+            content_type: "restart",  // 添加 content_type 字段，统一格式
             direction: [0, 0],
             was_successful: true
         };
@@ -1453,6 +1454,8 @@ class BabaGameEngine {
         // Create restart operation analysis
         const restartAnalysis = {
             content_type: "restart",
+            meta_type: "restart",  // 添加 meta_type 字段，保持一致性
+            direction: [0, 0],   // 添加 direction 字段，保持一致性
             text_count: 0,
             text_types: [],
             object_count: 0,
@@ -1483,8 +1486,8 @@ class BabaGameEngine {
         this.operationAnalyses.push(restartAnalysis);
         this.lastOperationAnalysis = restartAnalysis;
         
-        // Log the restart operation
-        this.logOperation([0, 0], true, [], [], "restart", currentTime);
+        // Log the restart operation - 注释掉避免重复记录
+        // this.logOperation([0, 0], true, [], [], "restart", currentTime);
         
         // Reset to initial state (but keep the original start time)
         this.dead = false;
@@ -1502,7 +1505,10 @@ class BabaGameEngine {
         // Reset data collection - 不清空历史记录，保持数据完整性
         // this.moveTimestamps = [];  // 注释掉，不清空历史记录
         // this.operationAnalyses = [];  // 注释掉，不清空历史记录
-        this.lastMoveTime = this.startTime;
+        
+        // 正确更新 lastMoveTime：restart 操作完成后，下一次移动应该从当前时间开始计算
+        this.lastMoveTime = currentTime;
+        
         this.initRuleOperationStats();
         
         // 重置操作状态，确保restart后的第一步移动被正确识别
