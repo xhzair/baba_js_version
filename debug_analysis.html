@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Baba Game Debug - tutorial_2</title>
+  <title>Baba Game Debug</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 0; }
     #game-container { display: flex; }
@@ -14,7 +14,7 @@
 <body>
   <h2>Baba Game Debug</h2>
   <p>Use arrow keys to move. 每次移动后会在右侧显示 engine 识别的 <code>content_type</code> 与 <code>rule_effect</code>。</p>
-  <p>按 <code>Z</code> 键执行 Undo 操作。</p>
+  <p>按键说明：<code>Z</code> 键执行 Undo 操作，<code>P</code> 键暂停/恢复游戏，<code>R</code> 键重新开始关卡。</p>
   <div id="game-container">
     <div id="canvasWrap"><canvas id="gameCanvas" width="640" height="640"></canvas></div>
     <div id="log"></div>
@@ -73,6 +73,29 @@
         if(last){
           appendLog(`Undo | content_type: ${last.content_type} | rule_effect: ${last.rules_affected?.effect}`);
         }
+        return;
+      }
+      
+      // 处理 Pause/Resume 操作
+      if(e.key.toLowerCase() === 'p'){
+        e.preventDefault();
+        if(engine.paused){
+          engine.resume();
+          appendLog(`Resume | content_type: resume | rule_effect: none`);
+        } else {
+          engine.pause();
+          appendLog(`Pause | content_type: pause | rule_effect: none`);
+        }
+        return;
+      }
+      
+      // 处理 Restart 操作
+      if(e.key.toLowerCase() === 'r'){
+        e.preventDefault();
+        engine.restart();
+        draw(engine);
+        // Restart操作会重置游戏状态，不需要显示lastOperationAnalysis
+        appendLog(`Restart | content_type: restart | rule_effect: reset`);
         return;
       }
       

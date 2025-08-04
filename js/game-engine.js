@@ -1329,6 +1329,9 @@ class BabaGameEngine {
             const timeSinceStart = currentTime - this.startTime;
             const timeSinceLastMove = currentTime - this.lastMoveTime;
             
+            // 先递增 operationCount，确保 pause 操作有正确的 move_number
+            this.operationCount++;
+            
             // Record pause operation timestamp
             const moveTimestamp = {
                 move_number: this.operationCount,
@@ -1376,6 +1379,9 @@ class BabaGameEngine {
             const currentTime = Date.now();
             const timeSinceStart = currentTime - this.startTime;
             const timeSinceLastMove = currentTime - this.lastMoveTime;
+            
+            // 先递增 operationCount，确保 resume 操作有正确的 move_number
+            this.operationCount++;
             
             // Record resume operation timestamp
             const moveTimestamp = {
@@ -1426,6 +1432,9 @@ class BabaGameEngine {
         const timeSinceStart = currentTime - this.startTime;
         const timeSinceLastMove = currentTime - this.lastMoveTime;
         
+        // 先递增 operationCount，确保 restart 操作有正确的 move_number
+        this.operationCount++;
+        
         // Record restart operation timestamp
         const moveTimestamp = {
             move_number: this.operationCount,
@@ -1437,6 +1446,9 @@ class BabaGameEngine {
             was_successful: true
         };
         this.moveTimestamps.push(moveTimestamp);
+        
+        // 分析restart前的规则状态
+        const currentRules = this.extractRulesState();
         
         // Create restart operation analysis
         const restartAnalysis = {
@@ -1450,11 +1462,22 @@ class BabaGameEngine {
             move_number: this.operationCount,
             timestamp: currentTime,
             restart_details: {
-                previous_operation_count: this.operationCount,
+                previous_operation_count: this.operationCount - 1,
                 elapsed_time: timeSinceStart / 1000,
                 remaining_time: this.getRemainingTime()
             }
         };
+        
+        // Restart操作应该显示规则被重置
+        // 如果当前有规则被破坏，restart会重置这些规则
+        const ruleEffect = {
+            effect: currentRules.length > 0 ? "reset" : "none",
+            rules_added: [],
+            rules_removed: currentRules.map(rule => [rule.subject, rule.verb, rule.predicate])
+        };
+        
+        // 更新restart分析中的规则影响
+        restartAnalysis.rules_affected = ruleEffect;
         
         // Store restart operation analysis
         this.operationAnalyses.push(restartAnalysis);
@@ -1469,18 +1492,22 @@ class BabaGameEngine {
         // do not reset start time, keep the original 8 minutes limit
         // this.startTime = Date.now();  
         // this.totalPauseTime = 0;      
-        this.operationCount = 0;
+        // this.operationCount = 0;  // 不重置operationCount，保持move_number的连续性
         this.errorAttempts = 0;
         this.savedStates = [];
         
         // remove recently moved objects
         this.recentlyMovedObjects.clear();
         
-        // Reset data collection
-        this.moveTimestamps = [];
-        this.operationAnalyses = [];
+        // Reset data collection - 不清空历史记录，保持数据完整性
+        // this.moveTimestamps = [];  // 注释掉，不清空历史记录
+        // this.operationAnalyses = [];  // 注释掉，不清空历史记录
         this.lastMoveTime = this.startTime;
         this.initRuleOperationStats();
+        
+        // 重置操作状态，确保restart后的第一步移动被正确识别
+        this.previousOperationState = null;
+        this.operationState = null;
         
         // Reload level
         this.initializeObjects(this.initialElements || []);

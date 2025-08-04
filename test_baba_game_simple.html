@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baba Game 简化测试环境</title>
+    
+    <!-- jsPsych CSS and JS (Local) -->
+    <script src="jspsych/dist/jspsych.js"></script>
+    <link href="jspsych/dist/jspsych.css" rel="stylesheet" type="text/css" />
+    
+    <!-- jsPsych plugins -->
+    <script src="jspsych/dist/plugin-html-keyboard-response.js"></script>
+    <script src="jspsych/dist/plugin-html-button-response.js"></script>
+    
+    <!-- Our custom CSS -->
+    <link href="css/baba-game.css" rel="stylesheet" type="text/css" />
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            overflow-x: auto;
+            overflow-y: auto;
+            min-height: 100vh;
+        }
+        
+        .test-controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-controls h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .control-group select, .control-group input {
+            width: 200px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-danger { background: #dc3545; color: white; }
+        
+        .btn:hover { opacity: 0.8; }
+        
+        .status-bar {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        #jspsych-target {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 600px;
+            overflow: auto;
+            max-height: 85vh;
+            padding: 20px;
+        }
+        
+        /* 确保游戏容器能够正常显示 */
+        .baba-game-container {
+            overflow: auto !important;
+            max-height: none !important;
+            height: auto !important;
+        }
+        
+        .game-grid {
+            overflow: visible !important;
+            max-height: none !important;
+        }
+        
+        /* 覆盖 jsPsych 的默认样式 */
+        .jspsych-content {
+            overflow: auto !important;
+        }
+        
+        .jspsych-display-element {
+            overflow: auto !important;
+        }
+        
+        /* 确保游戏界面能够正确显示 */
+        .baba-game-active {
+            overflow: auto !important;
+            height: auto !important;
+        }
+        
+        .baba-game-active #jspsych-target {
+            overflow: auto !important;
+            height: auto !important;
+        }
+        
+        /* 修复游戏网格的显示 */
+        .game-grid {
+            display: grid !important;
+            gap: 0px !important;
+            background-color: #7d7d7d !important;
+            border-radius: 0px !important;
+            padding: 0px !important;
+            margin: 10px !important;
+            max-width: calc(100vw - 40px) !important;
+            max-height: none !important;
+            transform: translateZ(0) !important;
+            will-change: transform !important;
+            min-height: 200px !important;
+            overflow: visible !important;
+            flex-shrink: 1 !important;
+        }
+        
+        /* 确保网格单元格正确显示 */
+        .grid-cell {
+            width: var(--cell-size, 60px) !important;
+            height: var(--cell-size, 60px) !important;
+            position: relative !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            min-width: 30px !important;
+            min-height: 30px !important;
+        }
+        
+        .test-results {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-results h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .result-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .result-success { border-left: 4px solid #28a745; }
+        .result-failed { border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="test-controls">
+        <h2>🧪 Baba Game 简化测试环境</h2>
+        
+        <div class="control-group">
+            <label for="levelSelect">选择关卡:</label>
+            <select id="levelSelect">
+                <option value="">请选择关卡...</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label for="timeLimit">时间限制 (秒):</label>
+            <input type="number" id="timeLimit" value="480" min="60" max="1800">
+        </div>
+        
+        <div class="control-group">
+            <label for="conditionType">实验条件:</label>
+            <select id="conditionType">
+                <option value="high-prior">高优先级 (high-prior)</option>
+                <option value="low-prior">低优先级 (low-prior)</option>
+            </select>
+        </div>
+        
+        <button class="btn btn-primary" onclick="startTest()">🚀 开始测试</button>
+        <button class="btn btn-success" onclick="exportData()">📊 导出数据</button>
+        <button class="btn btn-warning" onclick="clearResults()">🗑️ 清空结果</button>
+    </div>
+    
+    <div class="status-bar" id="statusBar">
+        状态: 准备就绪
+    </div>
+    
+    <div id="jspsych-target"></div>
+    
+    <div class="test-results" id="testResults" style="display: none;">
+        <h3>📋 测试结果</h3>
+        <div id="resultsList"></div>
+    </div>
+
+    <!-- Baba Game Dependencies -->
+    <script src="js/level-data.js"></script>
+    <script src="js/game-engine.js"></script>
+    <script src="js/jspsych-baba-game.js"></script>
+    <script src="js/jspsych-chapter-select.js"></script>
+    <script src="js/jspsych-rating-scale.js"></script>
+    
+    <!-- LZString for data compression -->
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.4.4/libs/lz-string.min.js"></script>
+    
+    <script>
+    // 全局变量
+    let jsPsych;
+    let allLevels = [];
+    let testResults = [];
+    
+    // 初始化
+    async function initialize() {
+        try {
+            // 初始化 JsPsych
+            jsPsych = initJsPsych({
+                display_element: 'jspsych-target',
+                default_iti: 250,
+                override_safe_mode: true,
+                on_finish: function() {
+                    console.log('JsPsych 实验完成');
+                }
+            });
+            
+            // 获取所有关卡
+            allLevels = getAllLevels();
+            const tutorialLevels = allLevels.tutorial || [];
+            const journeyLevels = allLevels.journey || [];
+            
+            // 填充关卡选择器
+            const levelSelect = document.getElementById('levelSelect');
+            levelSelect.innerHTML = '<option value="">请选择关卡...</option>';
+            
+            // 添加教程关卡
+            if(tutorialLevels.length > 0) {
+                const tutorialGroup = document.createElement('optgroup');
+                tutorialGroup.label = '教程关卡';
+                tutorialLevels.forEach(level => {
+                    const option = document.createElement('option');
+                    option.value = level.level_id;
+                    option.textContent = `${level.level_id} - ${level.name || '未命名'}`;
+                    tutorialGroup.appendChild(option);
+                });
+                levelSelect.appendChild(tutorialGroup);
+            }
+            
+            // 添加旅程关卡
+            if(journeyLevels.length > 0) {
+                const journeyGroup = document.createElement('optgroup');
+                journeyGroup.label = '旅程关卡';
+                journeyLevels.forEach(level => {
+                    const option = document.createElement('option');
+                    option.value = level.level_id;
+                    option.textContent = `${level.level_id} - ${level.name || '未命名'}`;
+                    journeyGroup.appendChild(option);
+                });
+                levelSelect.appendChild(journeyGroup);
+            }
+            
+            updateStatus('系统初始化完成，请选择关卡开始测试');
+            
+        } catch(error) {
+            console.error('初始化失败:', error);
+            updateStatus('初始化失败: ' + error.message);
+        }
+    }
+    
+    // 更新状态
+    function updateStatus(text) {
+        document.getElementById('statusBar').textContent = `状态: ${text}`;
+    }
+    
+    // 开始测试
+    function startTest() {
+        const levelId = document.getElementById('levelSelect').value;
+        const timeLimit = parseInt(document.getElementById('timeLimit').value);
+        const conditionType = document.getElementById('conditionType').value;
+        
+        if(!levelId) {
+            alert('请选择关卡');
+            return;
+        }
+        
+        const level = findLevel(levelId);
+        if(!level) {
+            alert(`关卡 ${levelId} 未找到`);
+            return;
+        }
+        
+        updateStatus(`测试关卡: ${levelId} (${conditionType})`);
+        
+        // 创建简化的实验流程，只包含 baba-game 部分
+        const timeline = [
+            // 开始提示
+            {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `
+                    <div style="text-align: center; padding: 50px;">
+                        <h2>测试关卡: ${levelId}</h2>
+                        <p>关卡名称: ${level.name || '未命名'}</p>
+                        <p>实验条件: ${conditionType}</p>
+                        <p>时间限制: ${timeLimit} 秒</p>
+                        <p>按任意键开始游戏</p>
+                    </div>
+                `,
+                choices: 'ALL_KEYS'
+            },
+            
+            // Baba Game
+            {
+                type: jsPsychBabaGame,
+                level_data: generateLevel(levelId, conditionType),
+                level_name: level.name || levelId,
+                chapter_name: level.chapter || '测试章节',
+                time_limit: timeLimit,
+                data: {
+                    trial_type: 'game_level',
+                    participant_id: 'test_participant',
+                    condition_type: conditionType
+                },
+                on_finish: function(data) {
+                    // 保存测试结果
+                    testResults.push({
+                        level_id: levelId,
+                        level_name: level.name,
+                        condition_type: conditionType,
+                        success: data.success,
+                        completion_reason: data.completion_reason,
+                        total_time: data.total_time,
+                        move_count: data.move_count,
+                        undo_count: data.undo_count,
+                        pause_count: data.pause_count,
+                        remaining_time: data.remaining_time,
+                        operation_count: data.operation_count,
+                        move_timestamps: data.move_timestamps,
+                        operation_analyses: data.operation_analyses,
+                        final_state: data.final_state
+                    });
+                    
+                    console.log('游戏完成:', data);
+                    showTestResults();
+                }
+            },
+            
+            // 完成提示
+            {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: `
+                    <div style="text-align: center; padding: 50px;">
+                        <h2>测试完成</h2>
+                        <p>关卡: ${levelId}</p>
+                        <p>按任意键继续</p>
+                    </div>
+                `,
+                choices: 'ALL_KEYS'
+            }
+        ];
+        
+        jsPsych.run(timeline);
+    }
+    
+    // 查找关卡
+    function findLevel(levelId) {
+        const all = [...(allLevels.tutorial || []), ...(allLevels.journey || [])];
+        return all.find(level => level.level_id === levelId);
+    }
+    
+    // 显示测试结果
+    function showTestResults() {
+        const resultsDiv = document.getElementById('testResults');
+        const resultsList = document.getElementById('resultsList');
+        
+        resultsList.innerHTML = '';
+        
+        testResults.forEach((result, index) => {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result-item ${result.success ? 'result-success' : 'result-failed'}`;
+            
+            resultDiv.innerHTML = `
+                <h4>${result.level_id} (${result.condition_type})</h4>
+                <p>状态: ${result.success ? '✅ 成功' : '❌ 失败'}</p>
+                <p>完成原因: ${result.completion_reason}</p>
+                <p>总时间: ${result.total_time.toFixed(1)} 秒</p>
+                <p>移动次数: ${result.move_count}</p>
+                <p>撤销次数: ${result.undo_count}</p>
+                <p>暂停次数: ${result.pause_count}</p>
+                <p>剩余时间: ${result.remaining_time.toFixed(1)} 秒</p>
+                <p>操作次数: ${result.operation_count}</p>
+            `;
+            
+            resultsList.appendChild(resultDiv);
+        });
+        
+        resultsDiv.style.display = 'block';
+    }
+    
+    // 清空结果
+    function clearResults() {
+        testResults = [];
+        document.getElementById('testResults').style.display = 'none';
+        updateStatus('结果已清空');
+    }
+    
+    // 导出数据
+    function exportData() {
+        if(testResults.length === 0) {
+            alert('没有可导出的数据');
+            return;
+        }
+        
+        const exportData = {
+            timestamp: new Date().toISOString(),
+            total_tests: testResults.length,
+            results: testResults
+        };
+        
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `baba_simple_test_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        updateStatus('数据已导出');
+    }
+    
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html> 
