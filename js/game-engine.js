@@ -342,12 +342,12 @@ class BabaGameEngine {
                     const conditionProp = textTypes[2].replace('TEXT_', '');
                     const resultProp = textTypes[4].replace('TEXT_', '');
                     
-                    const rule = new Rule(subject, 'IF', resultProp);
-                    rule.isConditional = true;
-                    rule.conditionObj = conditionProp;
-                    rule.conditionProp = conditionProp;
-                    
-                    if (!this.ruleExists(subject, 'IF', resultProp)) {
+                    // 验证IF规则的有效性
+                    if (this.isValidRule(subject, 'IF', resultProp) && !this.ruleExists(subject, 'IF', resultProp)) {
+                        const rule = new Rule(subject, 'IF', resultProp);
+                        rule.isConditional = true;
+                        rule.conditionObj = conditionProp;
+                        rule.conditionProp = conditionProp;
                         this.rules.push(rule);
                     }
                 }
@@ -367,7 +367,8 @@ class BabaGameEngine {
                     const subject = obj1.replace('TEXT_', '');
                     const predicate = obj3.replace('TEXT_', '');
                     
-                    if (!this.ruleExists(subject, 'IS', predicate)) {
+                    // 验证规则的有效性
+                    if (this.isValidRule(subject, 'IS', predicate) && !this.ruleExists(subject, 'IS', predicate)) {
                         this.rules.push(new Rule(subject, 'IS', predicate));
                     }
                 }
@@ -389,12 +390,12 @@ class BabaGameEngine {
                     const conditionProp = textTypes[2].replace('TEXT_', '');
                     const resultProp = textTypes[4].replace('TEXT_', '');
                     
-                    const rule = new Rule(subject, 'IF', resultProp);
-                    rule.isConditional = true;
-                    rule.conditionObj = conditionProp;
-                    rule.conditionProp = conditionProp;
-                    
-                    if (!this.ruleExists(subject, 'IF', resultProp)) {
+                    // 验证IF规则的有效性
+                    if (this.isValidRule(subject, 'IF', resultProp) && !this.ruleExists(subject, 'IF', resultProp)) {
+                        const rule = new Rule(subject, 'IF', resultProp);
+                        rule.isConditional = true;
+                        rule.conditionObj = conditionProp;
+                        rule.conditionProp = conditionProp;
                         this.rules.push(rule);
                     }
                 }
@@ -414,7 +415,8 @@ class BabaGameEngine {
                     const subject = obj1.replace('TEXT_', '');
                     const predicate = obj3.replace('TEXT_', '');
                     
-                    if (!this.ruleExists(subject, 'IS', predicate)) {
+                    // 验证规则的有效性
+                    if (this.isValidRule(subject, 'IS', predicate) && !this.ruleExists(subject, 'IS', predicate)) {
                         this.rules.push(new Rule(subject, 'IS', predicate));
                     }
                 }
@@ -429,6 +431,46 @@ class BabaGameEngine {
             o.isText
         );
         return obj ? obj.type : null;
+    }
+    
+    isValidRule(subject, verb, predicate) {
+        // 防止无效的规则组合
+        if (subject === 'IS' || subject === 'IF' || subject === 'FEELING') {
+            return false;
+        }
+        
+        if (predicate === 'IS' || predicate === 'IF' || predicate === 'FEELING') {
+            return false;
+        }
+        
+        // 验证谓语必须是有效的动词
+        if (verb !== 'IS' && verb !== 'IF' && verb !== 'FEELING') {
+            return false;
+        }
+        
+        // 动态获取当前游戏中实际存在的对象类型
+        const existingObjectTypes = new Set();
+        this.objects.forEach(obj => {
+            if (obj.type.startsWith('TEXT_')) {
+                // 对于文字对象，去掉TEXT_前缀
+                existingObjectTypes.add(obj.type.replace('TEXT_', ''));
+            } else {
+                // 对于普通对象，直接使用类型名
+                existingObjectTypes.add(obj.type);
+            }
+        });
+        
+        // 验证主语必须是当前游戏中存在的对象类型
+        if (!existingObjectTypes.has(subject)) {
+            return false;
+        }
+        
+        // 验证宾语必须是当前游戏中存在的对象类型或有效的属性
+        if (!existingObjectTypes.has(predicate)) {
+            return false;
+        }
+        
+        return true;
     }
     
     ruleExists(subject, verb, predicate) {
@@ -654,7 +696,46 @@ class BabaGameEngine {
         
         // Log the move operation (only if not already logged for win/defeat condition)
         if (!moveLogged) {
-            this.logMove(direction, anyMoved, allMovedObjects, overlapObjects);
+            // 如果移动失败，分析尝试推动的对象
+            if (!anyMoved) {
+                let attemptedPushObjects = [];
+                for (const youObj of youObjects) {
+                    const targetPos = [
+                        youObj.position[0] + direction[0],
+                        youObj.position[1] + direction[1]
+                    ];
+                    
+                    // 检查目标位置是否有可推动的对象
+                    const objectsAtTarget = this.objects.filter(obj =>
+                        obj.position[0] === targetPos[0] && 
+                        obj.position[1] === targetPos[1] &&
+                        (obj.isPush || obj.isText)
+                    );
+                    
+                    attemptedPushObjects.push(...objectsAtTarget);
+                }
+                
+                // 如果尝试推动了对象但失败了，应该记录为 push_text 或 push_object
+                if (attemptedPushObjects.length > 0) {
+                    const textObjects = attemptedPushObjects.filter(obj => obj.isText);
+                    const nonTextObjects = attemptedPushObjects.filter(obj => !obj.isText);
+                    
+                    let operationType = "move_only";
+                    if (textObjects.length > 0 && nonTextObjects.length === 0) {
+                        operationType = "push_text";
+                    } else if (nonTextObjects.length > 0) {
+                        operationType = "push_object";
+                    }
+                    
+                    this.logMove(direction, false, [], [], operationType);
+                } else {
+                    // 没有尝试推动对象，记录为普通的移动失败
+                    this.logMove(direction, false, [], []);
+                }
+            } else {
+                // 移动成功，正常记录
+                this.logMove(direction, anyMoved, allMovedObjects, overlapObjects);
+            }
         }
         
         return anyMoved;
