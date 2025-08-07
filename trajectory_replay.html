@@ -896,6 +896,22 @@
         // 直接调用引擎自带的undo
         currentEngine.undo();
         appendLog(`步骤 ${currentStep + 1}: Undo操作 - 已恢复到上一步状态`, 'meta');
+      } else if (contentType && contentType.toLowerCase() === 'restart') {
+        // 处理 Restart 操作
+        currentEngine.restart();
+        appendLog(`步骤 ${currentStep + 1}: Restart操作 - 游戏已重新开始`, 'meta');
+      } else if (contentType && contentType.toLowerCase() === 'reset') {
+        // 处理 Reset 操作（与 Restart 效果相同）
+        currentEngine.restart();
+        appendLog(`步骤 ${currentStep + 1}: Reset操作 - 游戏已重新开始`, 'meta');
+      } else if (contentType && contentType.toLowerCase() === 'pause') {
+        // 处理 Pause 操作
+        currentEngine.pause();
+        appendLog(`步骤 ${currentStep + 1}: Pause操作 - 游戏已暂停`, 'meta');
+      } else if (contentType && contentType.toLowerCase() === 'resume') {
+        // 处理 Resume 操作
+        currentEngine.resume();
+        appendLog(`步骤 ${currentStep + 1}: Resume操作 - 游戏已恢复`, 'meta');
       } else if (dirX !== 0 || dirY !== 0) {
         // 移动操作前不再调用saveState，processMove内部已处理
         const direction = [dirX, dirY];
@@ -953,6 +969,22 @@
         // 直接调用引擎自带的undo
         currentEngine.undo();
         appendLog(`步骤 ${currentStep + 1}: Undo操作 - 已恢复到上一步状态 (间隔: ${timeSinceLastMove}ms)`, 'meta');
+      } else if (contentType && contentType.toLowerCase() === 'restart') {
+        // 处理 Restart 操作
+        currentEngine.restart();
+        appendLog(`步骤 ${currentStep + 1}: Restart操作 - 游戏已重新开始 (间隔: ${timeSinceLastMove}ms)`, 'meta');
+      } else if (contentType && contentType.toLowerCase() === 'reset') {
+        // 处理 Reset 操作（与 Restart 效果相同）
+        currentEngine.restart();
+        appendLog(`步骤 ${currentStep + 1}: Reset操作 - 游戏已重新开始 (间隔: ${timeSinceLastMove}ms)`, 'meta');
+      } else if (contentType && contentType.toLowerCase() === 'pause') {
+        // 处理 Pause 操作
+        currentEngine.pause();
+        appendLog(`步骤 ${currentStep + 1}: Pause操作 - 游戏已暂停 (间隔: ${timeSinceLastMove}ms)`, 'meta');
+      } else if (contentType && contentType.toLowerCase() === 'resume') {
+        // 处理 Resume 操作
+        currentEngine.resume();
+        appendLog(`步骤 ${currentStep + 1}: Resume操作 - 游戏已恢复 (间隔: ${timeSinceLastMove}ms)`, 'meta');
       } else if (dirX !== 0 || dirY !== 0) {
         // 移动操作前不再调用saveState，processMove内部已处理
         const direction = [dirX, dirY];
